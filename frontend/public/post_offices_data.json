@@ -1,0 +1,1379 @@
+{
+  "metadata": {
+    "date_creation": "2025-08-28 14:09:13"
+  },
+  "donnees": {
+    "derniere_mise_a_jour": "2025-08-15",
+    "kpi1": {
+      "Nombre de dépêches pré-arrivées": 397,
+      "Nombre denvois livrés": 74,
+      "Nombre denvois livrés dès la première tentative (1 échec)": 6,
+      "Nombre denvois non livrés": 1406,
+      "Taux de livraison": 5.0,
+      "Taux de livraison dans les délais": 1.4,
+      "Nombre denvois en dépassement du délai de garde": 51,
+      "Nombre denvois bloqués en douane": 6,
+      "Nombre denvois retournés": 66,
+      "Délai de concentration": 3,
+      "Délai dacheminement des envois de bout en bout": 15,
+      "Délai de concentration des envois": 18,
+      "Nombre denvois non scannés": 527,
+      "data1": [
+        {
+          "name": "Jan",
+          "value": 107
+        },
+        {
+          "name": "Feb",
+          "value": 101
+        },
+        {
+          "name": "Mar",
+          "value": 322
+        },
+        {
+          "name": "Apr",
+          "value": 445
+        },
+        {
+          "name": "May",
+          "value": 357
+        },
+        {
+          "name": "Jun",
+          "value": 128
+        },
+        {
+          "name": "Jul",
+          "value": 378
+        },
+        {
+          "name": "Aug",
+          "value": 469
+        }
+      ],
+      "success_count": [
+        {
+          "name": "Jan",
+          "value": 1786
+        },
+        {
+          "name": "Feb",
+          "value": 2024
+        },
+        {
+          "name": "Mar",
+          "value": 1491
+        },
+        {
+          "name": "Apr",
+          "value": 1185
+        },
+        {
+          "name": "May",
+          "value": 631
+        },
+        {
+          "name": "Jun",
+          "value": 1926
+        },
+        {
+          "name": "Jul",
+          "value": 5056
+        },
+        {
+          "name": "Aug",
+          "value": 373
+        }
+      ],
+      "data3": [
+        {
+          "name": "Jan",
+          "value": 3880
+        },
+        {
+          "name": "Feb",
+          "value": 2407
+        },
+        {
+          "name": "Mar",
+          "value": 2904
+        },
+        {
+          "name": "Apr",
+          "value": 1105
+        },
+        {
+          "name": "May",
+          "value": 2794
+        },
+        {
+          "name": "Jun",
+          "value": 2413
+        },
+        {
+          "name": "Jul",
+          "value": 1052
+        },
+        {
+          "name": "Aug",
+          "value": 4206
+        }
+      ],
+      "failure_count": [
+        {
+          "name": "Jan",
+          "value": 302
+        },
+        {
+          "name": "Feb",
+          "value": 156
+        },
+        {
+          "name": "Mar",
+          "value": 615
+        },
+        {
+          "name": "Apr",
+          "value": 110
+        },
+        {
+          "name": "May",
+          "value": 212
+        },
+        {
+          "name": "Jun",
+          "value": 492
+        },
+        {
+          "name": "Jul",
+          "value": 450
+        },
+        {
+          "name": "Aug",
+          "value": 370
+        }
+      ],
+      "success_rate_all": [
+        {
+          "name": "Jan",
+          "value": 7.64
+        },
+        {
+          "name": "Feb",
+          "value": 5.2
+        },
+        {
+          "name": "Mar",
+          "value": 5.88
+        },
+        {
+          "name": "Apr",
+          "value": 7.09
+        },
+        {
+          "name": "May",
+          "value": 10.0
+        },
+        {
+          "name": "Jun",
+          "value": 11.08
+        },
+        {
+          "name": "Jul",
+          "value": 14.26
+        },
+        {
+          "name": "Aug",
+          "value": 7.09
+        }
+      ],
+      "on_time_delivery_rate_all": [
+        {
+          "name": "Jan",
+          "value": 2.6
+        },
+        {
+          "name": "Feb",
+          "value": 3.6
+        },
+        {
+          "name": "Mar",
+          "value": 4.5
+        },
+        {
+          "name": "Apr",
+          "value": 4.9
+        },
+        {
+          "name": "May",
+          "value": 1.5
+        },
+        {
+          "name": "Jun",
+          "value": 1.3
+        },
+        {
+          "name": "Jul",
+          "value": 4.6
+        },
+        {
+          "name": "Aug",
+          "value": 1.3
+        }
+      ],
+      "data7": [
+        {
+          "name": "Jan",
+          "value": 62
+        },
+        {
+          "name": "Feb",
+          "value": 52
+        },
+        {
+          "name": "Mar",
+          "value": 66
+        },
+        {
+          "name": "Apr",
+          "value": 4
+        },
+        {
+          "name": "May",
+          "value": 24
+        },
+        {
+          "name": "Jun",
+          "value": 4
+        },
+        {
+          "name": "Jul",
+          "value": 35
+        },
+        {
+          "name": "Aug",
+          "value": 21
+        }
+      ],
+      "data8": [
+        {
+          "name": "Jan",
+          "value": 18
+        },
+        {
+          "name": "Feb",
+          "value": 8
+        },
+        {
+          "name": "Mar",
+          "value": 10
+        },
+        {
+          "name": "Apr",
+          "value": 5
+        },
+        {
+          "name": "May",
+          "value": 20
+        },
+        {
+          "name": "Jun",
+          "value": 2
+        },
+        {
+          "name": "Jul",
+          "value": 7
+        },
+        {
+          "name": "Aug",
+          "value": 9
+        }
+      ],
+      "data9": [
+        {
+          "name": "Jan",
+          "value": 25
+        },
+        {
+          "name": "Feb",
+          "value": 72
+        },
+        {
+          "name": "Mar",
+          "value": 14
+        },
+        {
+          "name": "Apr",
+          "value": 13
+        },
+        {
+          "name": "May",
+          "value": 35
+        },
+        {
+          "name": "Jun",
+          "value": 64
+        },
+        {
+          "name": "Jul",
+          "value": 36
+        },
+        {
+          "name": "Aug",
+          "value": 47
+        }
+      ],
+      "data10": [
+        {
+          "name": "Jan",
+          "value": 3
+        },
+        {
+          "name": "Feb",
+          "value": 17
+        },
+        {
+          "name": "Mar",
+          "value": 3
+        },
+        {
+          "name": "Apr",
+          "value": 9
+        },
+        {
+          "name": "May",
+          "value": 1
+        },
+        {
+          "name": "Jun",
+          "value": 5
+        },
+        {
+          "name": "Jul",
+          "value": 14
+        },
+        {
+          "name": "Aug",
+          "value": 9
+        }
+      ],
+      "avg_duration_str": [
+        {
+          "name": "Jan",
+          "value": 20
+        },
+        {
+          "name": "Feb",
+          "value": 1
+        },
+        {
+          "name": "Mar",
+          "value": 6
+        },
+        {
+          "name": "Apr",
+          "value": 15
+        },
+        {
+          "name": "May",
+          "value": 9
+        },
+        {
+          "name": "Jun",
+          "value": 18
+        },
+        {
+          "name": "Jul",
+          "value": 18
+        },
+        {
+          "name": "Aug",
+          "value": 12
+        }
+      ],
+      "data12": [
+        {
+          "name": "Jan",
+          "value": 16
+        },
+        {
+          "name": "Feb",
+          "value": 12
+        },
+        {
+          "name": "Mar",
+          "value": 16
+        },
+        {
+          "name": "Apr",
+          "value": 19
+        },
+        {
+          "name": "May",
+          "value": 17
+        },
+        {
+          "name": "Jun",
+          "value": 3
+        },
+        {
+          "name": "Jul",
+          "value": 2
+        },
+        {
+          "name": "Aug",
+          "value": 13
+        }
+      ],
+      "data13": [
+        {
+          "name": "Jan",
+          "value": 93
+        },
+        {
+          "name": "Feb",
+          "value": 310
+        },
+        {
+          "name": "Mar",
+          "value": 672
+        },
+        {
+          "name": "Apr",
+          "value": 860
+        },
+        {
+          "name": "May",
+          "value": 17
+        },
+        {
+          "name": "Jun",
+          "value": 928
+        },
+        {
+          "name": "Jul",
+          "value": 86
+        },
+        {
+          "name": "Aug",
+          "value": 288
+        }
+      ]
+    },
+    "kpi2": {
+      "Nombre de dépêches pré-arrivées": 398,
+      "Nombre denvois livrés": 74,
+      "Nombre denvois livrés dès la première tentative (1 échec)": 6,
+      "Nombre denvois non livrés": 1406,
+      "Taux de livraison": 5.0,
+      "Taux de livraison dans les délais": 1.4,
+      "Nombre denvois en dépassement du délai de garde": 51,
+      "Nombre denvois bloqués en douane": 6,
+      "Nombre denvois retournés": 66,
+      "Délai de concentration": 3,
+      "Délai dacheminement des envois de bout en bout": 15,
+      "Délai de concentration des envois": 18,
+      "Nombre denvois non scannés": 527,
+      "data1": [
+        {
+          "name": "Jan",
+          "value": 107
+        },
+        {
+          "name": "Feb",
+          "value": 101
+        },
+        {
+          "name": "Mar",
+          "value": 322
+        },
+        {
+          "name": "Apr",
+          "value": 445
+        },
+        {
+          "name": "May",
+          "value": 357
+        },
+        {
+          "name": "Jun",
+          "value": 128
+        },
+        {
+          "name": "Jul",
+          "value": 378
+        },
+        {
+          "name": "Aug",
+          "value": 469
+        }
+      ],
+      "success_count": [
+        {
+          "name": "Jan",
+          "value": 1786
+        },
+        {
+          "name": "Feb",
+          "value": 2024
+        },
+        {
+          "name": "Mar",
+          "value": 1491
+        },
+        {
+          "name": "Apr",
+          "value": 1185
+        },
+        {
+          "name": "May",
+          "value": 631
+        },
+        {
+          "name": "Jun",
+          "value": 1926
+        },
+        {
+          "name": "Jul",
+          "value": 5056
+        },
+        {
+          "name": "Aug",
+          "value": 373
+        }
+      ],
+      "data3": [
+        {
+          "name": "Jan",
+          "value": 3880
+        },
+        {
+          "name": "Feb",
+          "value": 2407
+        },
+        {
+          "name": "Mar",
+          "value": 2904
+        },
+        {
+          "name": "Apr",
+          "value": 1105
+        },
+        {
+          "name": "May",
+          "value": 2794
+        },
+        {
+          "name": "Jun",
+          "value": 2413
+        },
+        {
+          "name": "Jul",
+          "value": 1052
+        },
+        {
+          "name": "Aug",
+          "value": 4206
+        }
+      ],
+      "failure_count": [
+        {
+          "name": "Jan",
+          "value": 302
+        },
+        {
+          "name": "Feb",
+          "value": 156
+        },
+        {
+          "name": "Mar",
+          "value": 615
+        },
+        {
+          "name": "Apr",
+          "value": 110
+        },
+        {
+          "name": "May",
+          "value": 212
+        },
+        {
+          "name": "Jun",
+          "value": 492
+        },
+        {
+          "name": "Jul",
+          "value": 450
+        },
+        {
+          "name": "Aug",
+          "value": 370
+        }
+      ],
+      "success_rate_all": [
+        {
+          "name": "Jan",
+          "value": 7.64
+        },
+        {
+          "name": "Feb",
+          "value": 5.2
+        },
+        {
+          "name": "Mar",
+          "value": 5.88
+        },
+        {
+          "name": "Apr",
+          "value": 7.09
+        },
+        {
+          "name": "May",
+          "value": 10.0
+        },
+        {
+          "name": "Jun",
+          "value": 11.08
+        },
+        {
+          "name": "Jul",
+          "value": 14.26
+        },
+        {
+          "name": "Aug",
+          "value": 7.09
+        }
+      ],
+      "on_time_delivery_rate_all": [
+        {
+          "name": "Jan",
+          "value": 2.6
+        },
+        {
+          "name": "Feb",
+          "value": 3.6
+        },
+        {
+          "name": "Mar",
+          "value": 4.5
+        },
+        {
+          "name": "Apr",
+          "value": 4.9
+        },
+        {
+          "name": "May",
+          "value": 1.5
+        },
+        {
+          "name": "Jun",
+          "value": 1.3
+        },
+        {
+          "name": "Jul",
+          "value": 4.6
+        },
+        {
+          "name": "Aug",
+          "value": 1.3
+        }
+      ],
+      "data7": [
+        {
+          "name": "Jan",
+          "value": 62
+        },
+        {
+          "name": "Feb",
+          "value": 52
+        },
+        {
+          "name": "Mar",
+          "value": 66
+        },
+        {
+          "name": "Apr",
+          "value": 4
+        },
+        {
+          "name": "May",
+          "value": 24
+        },
+        {
+          "name": "Jun",
+          "value": 4
+        },
+        {
+          "name": "Jul",
+          "value": 35
+        },
+        {
+          "name": "Aug",
+          "value": 21
+        }
+      ],
+      "data8": [
+        {
+          "name": "Jan",
+          "value": 18
+        },
+        {
+          "name": "Feb",
+          "value": 8
+        },
+        {
+          "name": "Mar",
+          "value": 10
+        },
+        {
+          "name": "Apr",
+          "value": 5
+        },
+        {
+          "name": "May",
+          "value": 20
+        },
+        {
+          "name": "Jun",
+          "value": 2
+        },
+        {
+          "name": "Jul",
+          "value": 7
+        },
+        {
+          "name": "Aug",
+          "value": 9
+        }
+      ],
+      "data9": [
+        {
+          "name": "Jan",
+          "value": 25
+        },
+        {
+          "name": "Feb",
+          "value": 72
+        },
+        {
+          "name": "Mar",
+          "value": 14
+        },
+        {
+          "name": "Apr",
+          "value": 13
+        },
+        {
+          "name": "May",
+          "value": 35
+        },
+        {
+          "name": "Jun",
+          "value": 64
+        },
+        {
+          "name": "Jul",
+          "value": 36
+        },
+        {
+          "name": "Aug",
+          "value": 47
+        }
+      ],
+      "data10": [
+        {
+          "name": "Jan",
+          "value": 3
+        },
+        {
+          "name": "Feb",
+          "value": 17
+        },
+        {
+          "name": "Mar",
+          "value": 3
+        },
+        {
+          "name": "Apr",
+          "value": 9
+        },
+        {
+          "name": "May",
+          "value": 1
+        },
+        {
+          "name": "Jun",
+          "value": 5
+        },
+        {
+          "name": "Jul",
+          "value": 14
+        },
+        {
+          "name": "Aug",
+          "value": 9
+        }
+      ],
+      "avg_duration_str": [
+        {
+          "name": "Jan",
+          "value": 20
+        },
+        {
+          "name": "Feb",
+          "value": 1
+        },
+        {
+          "name": "Mar",
+          "value": 6
+        },
+        {
+          "name": "Apr",
+          "value": 15
+        },
+        {
+          "name": "May",
+          "value": 9
+        },
+        {
+          "name": "Jun",
+          "value": 18
+        },
+        {
+          "name": "Jul",
+          "value": 18
+        },
+        {
+          "name": "Aug",
+          "value": 12
+        }
+      ],
+      "data12": [
+        {
+          "name": "Jan",
+          "value": 16
+        },
+        {
+          "name": "Feb",
+          "value": 12
+        },
+        {
+          "name": "Mar",
+          "value": 16
+        },
+        {
+          "name": "Apr",
+          "value": 19
+        },
+        {
+          "name": "May",
+          "value": 17
+        },
+        {
+          "name": "Jun",
+          "value": 3
+        },
+        {
+          "name": "Jul",
+          "value": 2
+        },
+        {
+          "name": "Aug",
+          "value": 13
+        }
+      ],
+      "data13": [
+        {
+          "name": "Jan",
+          "value": 93
+        },
+        {
+          "name": "Feb",
+          "value": 310
+        },
+        {
+          "name": "Mar",
+          "value": 672
+        },
+        {
+          "name": "Apr",
+          "value": 860
+        },
+        {
+          "name": "May",
+          "value": 17
+        },
+        {
+          "name": "Jun",
+          "value": 928
+        },
+        {
+          "name": "Jul",
+          "value": 86
+        },
+        {
+          "name": "Aug",
+          "value": 288
+        }
+      ]
+    },
+    "kpi3": {
+      "Nombre de dépêches pré-arrivées": 399,
+      "Nombre denvois livrés": 74,
+      "Nombre denvois livrés dès la première tentative (1 échec)": 6,
+      "Nombre denvois non livrés": 1406,
+      "Taux de livraison": 5.0,
+      "Taux de livraison dans les délais": 1.4,
+      "Nombre denvois en dépassement du délai de garde": 51,
+      "Nombre denvois bloqués en douane": 6,
+      "Nombre denvois retournés": 66,
+      "Délai de concentration": 3,
+      "Délai dacheminement des envois de bout en bout": 15,
+      "Délai de concentration des envois": 18,
+      "Nombre denvois non scannés": 527,
+      "data1": [
+        {
+          "name": "Jan",
+          "value": 107
+        },
+        {
+          "name": "Feb",
+          "value": 101
+        },
+        {
+          "name": "Mar",
+          "value": 322
+        },
+        {
+          "name": "Apr",
+          "value": 445
+        },
+        {
+          "name": "May",
+          "value": 357
+        },
+        {
+          "name": "Jun",
+          "value": 128
+        },
+        {
+          "name": "Jul",
+          "value": 378
+        },
+        {
+          "name": "Aug",
+          "value": 469
+        }
+      ],
+      "success_count": [
+        {
+          "name": "Jan",
+          "value": 1786
+        },
+        {
+          "name": "Feb",
+          "value": 2024
+        },
+        {
+          "name": "Mar",
+          "value": 1491
+        },
+        {
+          "name": "Apr",
+          "value": 1185
+        },
+        {
+          "name": "May",
+          "value": 631
+        },
+        {
+          "name": "Jun",
+          "value": 1926
+        },
+        {
+          "name": "Jul",
+          "value": 5056
+        },
+        {
+          "name": "Aug",
+          "value": 373
+        }
+      ],
+      "data3": [
+        {
+          "name": "Jan",
+          "value": 3880
+        },
+        {
+          "name": "Feb",
+          "value": 2407
+        },
+        {
+          "name": "Mar",
+          "value": 2904
+        },
+        {
+          "name": "Apr",
+          "value": 1105
+        },
+        {
+          "name": "May",
+          "value": 2794
+        },
+        {
+          "name": "Jun",
+          "value": 2413
+        },
+        {
+          "name": "Jul",
+          "value": 1052
+        },
+        {
+          "name": "Aug",
+          "value": 4206
+        }
+      ],
+      "failure_count": [
+        {
+          "name": "Jan",
+          "value": 302
+        },
+        {
+          "name": "Feb",
+          "value": 156
+        },
+        {
+          "name": "Mar",
+          "value": 615
+        },
+        {
+          "name": "Apr",
+          "value": 110
+        },
+        {
+          "name": "May",
+          "value": 212
+        },
+        {
+          "name": "Jun",
+          "value": 492
+        },
+        {
+          "name": "Jul",
+          "value": 450
+        },
+        {
+          "name": "Aug",
+          "value": 370
+        }
+      ],
+      "success_rate_all": [
+        {
+          "name": "Jan",
+          "value": 7.64
+        },
+        {
+          "name": "Feb",
+          "value": 5.2
+        },
+        {
+          "name": "Mar",
+          "value": 5.88
+        },
+        {
+          "name": "Apr",
+          "value": 7.09
+        },
+        {
+          "name": "May",
+          "value": 10.0
+        },
+        {
+          "name": "Jun",
+          "value": 11.08
+        },
+        {
+          "name": "Jul",
+          "value": 14.26
+        },
+        {
+          "name": "Aug",
+          "value": 7.09
+        }
+      ],
+      "on_time_delivery_rate_all": [
+        {
+          "name": "Jan",
+          "value": 2.6
+        },
+        {
+          "name": "Feb",
+          "value": 3.6
+        },
+        {
+          "name": "Mar",
+          "value": 4.5
+        },
+        {
+          "name": "Apr",
+          "value": 4.9
+        },
+        {
+          "name": "May",
+          "value": 1.5
+        },
+        {
+          "name": "Jun",
+          "value": 1.3
+        },
+        {
+          "name": "Jul",
+          "value": 4.6
+        },
+        {
+          "name": "Aug",
+          "value": 1.3
+        }
+      ],
+      "data7": [
+        {
+          "name": "Jan",
+          "value": 62
+        },
+        {
+          "name": "Feb",
+          "value": 52
+        },
+        {
+          "name": "Mar",
+          "value": 66
+        },
+        {
+          "name": "Apr",
+          "value": 4
+        },
+        {
+          "name": "May",
+          "value": 24
+        },
+        {
+          "name": "Jun",
+          "value": 4
+        },
+        {
+          "name": "Jul",
+          "value": 35
+        },
+        {
+          "name": "Aug",
+          "value": 21
+        }
+      ],
+      "data8": [
+        {
+          "name": "Jan",
+          "value": 18
+        },
+        {
+          "name": "Feb",
+          "value": 8
+        },
+        {
+          "name": "Mar",
+          "value": 10
+        },
+        {
+          "name": "Apr",
+          "value": 5
+        },
+        {
+          "name": "May",
+          "value": 20
+        },
+        {
+          "name": "Jun",
+          "value": 2
+        },
+        {
+          "name": "Jul",
+          "value": 7
+        },
+        {
+          "name": "Aug",
+          "value": 9
+        }
+      ],
+      "data9": [
+        {
+          "name": "Jan",
+          "value": 25
+        },
+        {
+          "name": "Feb",
+          "value": 72
+        },
+        {
+          "name": "Mar",
+          "value": 14
+        },
+        {
+          "name": "Apr",
+          "value": 13
+        },
+        {
+          "name": "May",
+          "value": 35
+        },
+        {
+          "name": "Jun",
+          "value": 64
+        },
+        {
+          "name": "Jul",
+          "value": 36
+        },
+        {
+          "name": "Aug",
+          "value": 47
+        }
+      ],
+      "data10": [
+        {
+          "name": "Jan",
+          "value": 3
+        },
+        {
+          "name": "Feb",
+          "value": 17
+        },
+        {
+          "name": "Mar",
+          "value": 3
+        },
+        {
+          "name": "Apr",
+          "value": 9
+        },
+        {
+          "name": "May",
+          "value": 1
+        },
+        {
+          "name": "Jun",
+          "value": 5
+        },
+        {
+          "name": "Jul",
+          "value": 14
+        },
+        {
+          "name": "Aug",
+          "value": 9
+        }
+      ],
+      "avg_duration_str": [
+        {
+          "name": "Jan",
+          "value": 20
+        },
+        {
+          "name": "Feb",
+          "value": 1
+        },
+        {
+          "name": "Mar",
+          "value": 6
+        },
+        {
+          "name": "Apr",
+          "value": 15
+        },
+        {
+          "name": "May",
+          "value": 9
+        },
+        {
+          "name": "Jun",
+          "value": 18
+        },
+        {
+          "name": "Jul",
+          "value": 18
+        },
+        {
+          "name": "Aug",
+          "value": 12
+        }
+      ],
+      "data12": [
+        {
+          "name": "Jan",
+          "value": 16
+        },
+        {
+          "name": "Feb",
+          "value": 12
+        },
+        {
+          "name": "Mar",
+          "value": 16
+        },
+        {
+          "name": "Apr",
+          "value": 19
+        },
+        {
+          "name": "May",
+          "value": 17
+        },
+        {
+          "name": "Jun",
+          "value": 3
+        },
+        {
+          "name": "Jul",
+          "value": 2
+        },
+        {
+          "name": "Aug",
+          "value": 13
+        }
+      ],
+      "data13": [
+        {
+          "name": "Jan",
+          "value": 93
+        },
+        {
+          "name": "Feb",
+          "value": 310
+        },
+        {
+          "name": "Mar",
+          "value": 672
+        },
+        {
+          "name": "Apr",
+          "value": 860
+        },
+        {
+          "name": "May",
+          "value": 17
+        },
+        {
+          "name": "Jun",
+          "value": 928
+        },
+        {
+          "name": "Jul",
+          "value": 86
+        },
+        {
+          "name": "Aug",
+          "value": 288
+        }
+      ]
+    }
+  }
+}

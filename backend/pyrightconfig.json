@@ -1,0 +1,9 @@
+{
+  "venv": ".venv",
+  "venvPath": ".",
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+  "extraPaths": ["./.venv/lib/python3.12/site-packages"],
+  "ignore": ["**/__pycache__", "**/migrations"],
+  "include": ["core", "config"]
+}
