@@ -12,6 +12,13 @@ class Package(models.Model):
     failed_at = models.DateTimeField(null=True, blank=True)
     alert_after_success = models.BooleanField(default=False)
 
+    # TODO:
+    # success_afte_one_fail : int
+    # is_currently in customs : yes, no, confistecated
+    # customs_latest_interaction: datetime
+    # ~~is returned: 36, fail, + returing path to spcific states~~
+    # event count of transition after failure. event 32
+    # last Known_location
     def __str__(self):
         return self.mailitm_fid
 
