@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import type {
   AirportStats,
   CPXStats,
   CTNIStats,
-  Dashboard,
-  SelectedCardType,
+  Office,
+  KPIRep,
 } from "../../types";
-import { KPI_TO_TITLE_AND_COLOR } from "../constants/kpi_titles";
+// import { KPI_TO_TITLE_AND_COLOR } from "../constants/kpi_titles";
 
 function formatValue(value: number | string): string {
   if (typeof value === "number") {
@@ -56,9 +56,11 @@ function formatValue(value: number | string): string {
 // ─────────────────────────────────────────────
 interface StatCardProps {
   title: string;
+  kpiKey: keyof CPXStats | keyof CTNIStats | keyof AirportStats;
+  index?: number;
   value: number | string;
   color?: string;
-  onClick?: () => void;
+  onClick?: (kpi: KPIRep) => void;
   isSelected?: boolean;
 }
 
@@ -68,10 +70,18 @@ const StatCard: React.FC<StatCardProps> = ({
   color = "#1e40af",
   onClick,
   isSelected = false,
+  kpiKey,
+  index,
 }) => {
+  const handleClick = (kpi: KPIRep) => {
+    if (onClick) {
+      console.log("DEBUG: [one stat]", kpi);
+      onClick(kpi);
+    }
+  };
   return (
     <div
-      onClick={onClick}
+      onClick={() => handleClick({ key: kpiKey, index: index })}
       style={{
         borderRadius: "8px",
         padding: "0",
@@ -165,26 +175,26 @@ const StatCard: React.FC<StatCardProps> = ({
 // 📊 StatCards — Grid of all Dashboard KPIs
 // ─────────────────────────────────────────────
 interface StatCardsProps {
-  stats?: Dashboard | CTNIStats | CPXStats | AirportStats;
-  onCardClick?: (kpiKey: keyof Dashboard | null, index: number | null) => void;
+  office?: Office;
+  onCardClick?: (kpi: KPIRep) => void;
   lineChart?: any;
-  selectedCard: SelectedCardType;
+  // selectedCard: KPIRep | null;
 }
 
 const StatCards: React.FC<StatCardsProps> = ({
-  stats,
+  office,
   onCardClick,
-  selectedCard,
+  // selectedCard,
 }) => {
+  console.log("Office data :", office);
+  const stats = office?.stats;
   const color = "#2e75e7ff";
   console.log("Showing these stats: ", stats);
-  const handleCardClick = (key: keyof Dashboard, index: number) => {
-    const newSelected =
-      selectedCard?.index === index
-        ? { key: null, index: null }
-        : { key, index };
+  const handleCardClick = (kpi: KPIRep) => {
     if (onCardClick) {
-      onCardClick(newSelected.key, newSelected.index);
+      console.log("DEBUG: [stats]", kpi);
+
+      onCardClick(kpi);
     }
   };
 
@@ -207,19 +217,24 @@ const StatCards: React.FC<StatCardsProps> = ({
         }}
       >
         {stats ? (
-          Object.entries(stats).map(([key, value], index) => {
-            const k = key as keyof Dashboard;
-            const config = KPI_TO_TITLE_AND_COLOR[k];
-            if (!config) return null;
-
+          stats.map((stat, index) => {
+            const formattedValue = formatValue(stat.value);
+            console.log(
+              "Printing this stat: ",
+              stat.title,
+              "index: ",
+              stat.index,
+              "key: ",
+              stat.key,
+            );
             return (
               <StatCard
-                key={key}
-                title={config.title}
-                value={value}
+                title={stat.title}
+                kpiKey={stat.key}
+                index={index}
+                value={formattedValue}
                 color={color}
-                onClick={() => handleCardClick(k, index)}
-                isSelected={selectedCard?.index === index}
+                onClick={handleCardClick}
               />
             );
           })

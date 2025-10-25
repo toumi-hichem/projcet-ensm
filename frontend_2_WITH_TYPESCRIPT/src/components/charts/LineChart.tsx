@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { KPIHistory } from "../../types";
 
 // Component types
@@ -15,6 +15,8 @@ interface CustomLineChartProps {
   margin?: Margin;
   style?: React.CSSProperties;
   responsive?: boolean;
+  title?: string; // ✅ new
+  titleStyle?: React.CSSProperties;
 }
 
 interface CartesianGridProps {
@@ -103,6 +105,8 @@ export function CustomLineChart({
   margin = { top: 5, right: 0, left: 0, bottom: 5 },
   style = {},
   responsive = false,
+  title,
+  titleStyle = {},
 }: CustomLineChartProps) {
   const [hoveredPoint, setHoveredPoint] = useState<{
     lineIndex: number;
@@ -236,6 +240,21 @@ export function CustomLineChart({
         preserveAspectRatio="xMidYMid meet"
         style={{ overflow: "visible" }}
       >
+        {/* Chart Title */}
+        {title && (
+          <text
+            x={width / 2}
+            y={padding.top - 10}
+            textAnchor="middle"
+            fontSize={16}
+            fontWeight={600}
+            fill="#111827"
+            {...titleStyle}
+          >
+            {title}
+          </text>
+        )}
+
         {/* Grid lines */}
         {yTickValues.map((tick, i) => (
           <line

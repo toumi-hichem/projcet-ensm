@@ -87,3 +87,22 @@ export interface MajorCenterAllResponse extends MajorCenterResponseBase {
 export type MajorCenterResponse =
   | MajorCenterSingleResponse
   | MajorCenterAllResponse;
+
+export type KPIStat = {
+  key: keyof CPXStats | keyof CTNIStats | keyof AirportStats;
+  index?: number;
+  title: string;
+  value: number | string | null;
+  color: string;
+  chartData: any[]; // shape depends on LineChart; keep flexible
+};
+export type KPIRep = {
+  key: keyof CPXStats | keyof CTNIStats | keyof AirportStats;
+  index?: number;
+};
+export type Office = {
+  id: MajorCenterID;
+  name: string;
+  location: string;
+  stats: KPIStat[];
+};

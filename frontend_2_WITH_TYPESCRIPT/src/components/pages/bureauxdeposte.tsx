@@ -1,11 +1,10 @@
 // Bureauxdeposte.tsx
 import React, { useEffect, useRef, useState } from "react";
-import { StatCards } from "../ui";
+import { StatCards } from "../ui/major-centers-stat-cards";
 import {
   CartesianGrid,
   CustomLineChart,
   Line,
-  CustomLineChart as LineChart,
   Tooltip,
   XAxis,
   YAxis,
@@ -18,6 +17,9 @@ import {
   type MajorCenterAllResponse,
   type MajorCenterID,
   type MajorCenterResponse,
+  type Office,
+  type KPIStat,
+  type KPIRep,
 } from "../../types";
 
 /* ---------------------------
@@ -85,30 +87,28 @@ const fetchHistoryKPIData = async (
 /* ---------------------------
   Local types for UI data
 ---------------------------- */
-type KPIStat = {
-  title: string;
-  value: number | string | null;
-  color: string;
-  chartData: any[]; // shape depends on your LineChart; keep flexible
-};
-
-type Office = {
-  id: MajorCenterID;
-  name: string;
-  location: string;
-  stats: KPIStat[];
-};
 
 /* ---------------------------
   Component
 ---------------------------- */
 export const Bureauxdeposte: React.FC = () => {
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
-  const [selectedCard, setSelectedCard] = useState<number | null>(null);
+  const [selectedCard, setSelectedCard] = useState<KPIRep | null>(null);
   const [offices, setOffices] = useState<Office[]>([]);
   const historyCache = useRef<Record<string, any[]>>({}); // cache per kpiFieldName
   const isMounted = useRef(true);
   const [data, setData] = useState<MajorCenterAllResponse["data"] | null>(null);
+  const [activeStat, setActiveStat] = useState<KPIStat | null>(null);
+
+  useEffect(() => {
+    setActiveStat(
+      selectedCard
+        ? (selectedOffice?.stats.find(
+            (stat) => stat.key === selectedCard.key,
+          ) ?? null)
+        : null,
+    );
+  }, [offices, selectedCard, selectedOffice?.stats]);
 
   useEffect(() => {
     const fetchAllData = async () => {
@@ -199,6 +199,7 @@ export const Bureauxdeposte: React.FC = () => {
           }
 
           stats.push({
+            key: fieldName,
             title,
             value,
             color: "#2e75e7ff",
@@ -230,8 +231,10 @@ export const Bureauxdeposte: React.FC = () => {
     setSelectedCard(null);
   };
 
-  const handleCardClick = (index: number) => {
-    setSelectedCard((prev) => (prev === index ? null : index));
+  const handleCardClick = (kpi: KPIRep) => {
+    console.log("DEBUG: [page]", kpi);
+
+    setSelectedCard((prev) => (prev?.index === kpi.index ? null : kpi));
   };
 
   return (
@@ -306,61 +309,58 @@ export const Bureauxdeposte: React.FC = () => {
           }}
         >
           <StatCards
-            stats={
-              selectedOffice.id === "airport"
-                ? data?.airport
-                : selectedOffice.id === "cpx"
-                  ? data?.cpx
-                  : data?.ctni
-            }
-            onCardClick={(stat, idx) => handleCardClick(idx)}
-            selectedCard={selectedCard}
-            setSelectedCard={(idx: number | null) => setSelectedCard(idx)}
+            office={selectedOffice}
+            onCardClick={handleCardClick}
+            // selectedCard={selectedCard}
           />
 
           {/* charts */}
           <div
             style={{
-              display: "flex",
-              gap: "20px",
-              alignItems: "stretch",
-              marginTop: "20px",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "24px",
+              marginTop: "24px",
             }}
           >
             <div
               style={{
                 backgroundColor: "white",
-                borderRadius: "8px",
-                padding: "19px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                borderRadius: "12px",
+                padding: "20px",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
                 border: "1px solid #e5e5e5",
-                flex: 1.5,
-                height: "250px",
                 display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                minHeight: "320px",
               }}
             >
-              <LineChart
+              <CustomLineChart
                 data={selectedOffice.stats[1]?.chartData ?? []}
                 title="Évolution mensuelle (exemple)"
-                showLabels={true}
+                style={{
+                  width: "100%",
+                  maxWidth: "700px",
+                }}
+                responsive
               />
             </div>
 
             <div
               style={{
                 backgroundColor: "white",
-                borderRadius: "8px",
-                padding: "19px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                borderRadius: "12px",
+                padding: "20px",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.08)",
                 border: "1px solid #e5e5e5",
-                flex: 1.5,
-                height: "250px",
                 display: "flex",
-                alignItems: "center",
+                flexDirection: "column",
                 justifyContent: "center",
+                minHeight: "320px",
               }}
             >
-              {selectedCard !== null ? (
+              {activeStat && selectedCard !== null ? (
                 <div
                   style={{
                     width: "100%",
@@ -371,30 +371,22 @@ export const Bureauxdeposte: React.FC = () => {
                   }}
                 >
                   <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
-                    {selectedOffice.stats[selectedCard].title}
+                    {activeStat.title ?? "N/A"}
                   </div>
 
                   <div style={{ flex: 1, width: "100%" }}>
-                    <LineChart
-                      data={selectedOffice.stats[selectedCard].chartData ?? []}
-                      title={`Évolution — ${selectedOffice.stats[selectedCard].title}`}
-                      showLabels={true}
-                    />
                     <CustomLineChart
+                      data={activeStat.chartData ?? []}
+                      title={`Évolution — ${
+                        selectedOffice.stats.find(
+                          (stat) => stat.key === selectedCard.key,
+                        )?.title
+                      }`}
                       style={{
                         width: "100%",
                         maxWidth: "700px",
-                        maxHeight: "70vh",
-                        aspectRatio: 1.618,
                       }}
                       responsive
-                      data={selectedOffice.stats[selectedCard].chartData ?? []}
-                      margin={{
-                        top: 5,
-                        right: 0,
-                        left: 0,
-                        bottom: 5,
-                      }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />

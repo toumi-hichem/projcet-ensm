@@ -1,3 +1,5 @@
+import type { AirportStats, CPXStats, CTNIStats } from "./major-centers";
+
 export interface Dashboard {
   timestamp: string; // ISO string
   pre_arrived_dispatches_count: number;
@@ -42,6 +44,6 @@ export interface DashboardPostResponse {
 }
 
 export type SelectedCardType = {
-  key: keyof Dashboard;
+  key: keyof Dashboard | keyof CTNIStats | keyof CPXStats | keyof AirportStats;
   index: number;
 } | null;
