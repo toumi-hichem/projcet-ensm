@@ -28,9 +28,10 @@ const fetchDashboardData = async () => {
   return data;
 };
 const fetchHistoryKPIData = async (kpiFieldName: keyof Dashboard) => {
-  const end_date = new Date();
-  const start_date = new Date();
-  start_date.setFullYear(end_date.getFullYear() - 1);
+  const start_date = new Date("2021-12-11");
+  const end_date = new Date("2025-05-19");
+
+  // start_date.setFullYear(end_date.getFullYear() - 1);
 
   const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}dashboard/`, {
     method: "POST",

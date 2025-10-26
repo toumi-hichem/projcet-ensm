@@ -67,11 +67,16 @@ class UploadCSVAndSave(APIView):
                 sub = df_clean[df_clean["MAILITM_FID"] == mailitm_fid].sort_values(
                     "date"
                 )
+                # --- NEW: derive last event info ---
+                last_event = sub.iloc[-1]
+                last_event_type_cd = last_event["EVENT_TYPE_CD"]
+                last_event_timestamp = last_event["date"]
+
                 status_val = "in_process"
                 delivered_at = None
                 failed_at = None
                 alert_after_success = False
-                last_known_location = sub.iloc[-1].get("établissement_postal")
+                last_known_location = last_event.get("établissement_postal")
 
                 customs_codes = ["4", "6", "7", "31", "38"]
                 customs_rows = sub[
@@ -175,6 +180,8 @@ class UploadCSVAndSave(APIView):
                         alert_after_seizure=alert_after_seizure,
                         cities_after_failure_count=cities_after_failure_count,
                         last_known_location=last_known_location,
+                        last_event_type_cd=last_event_type_cd,  # ✅
+                        last_event_timestamp=last_event_timestamp,  # ✅
                     )
                 )
 
@@ -211,6 +218,8 @@ class UploadCSVAndSave(APIView):
                     pkg.alert_after_seizure = new_pkg.alert_after_seizure
                     pkg.cities_after_failure_count = new_pkg.cities_after_failure_count
                     pkg.last_known_location = new_pkg.last_known_location
+                    pkg.last_event_type_cd = new_pkg.last_event_type_cd  # ✅
+                    pkg.last_event_timestamp = new_pkg.last_event_timestamp
 
             # ✅ Final bulk update
             Package.objects.bulk_update(
@@ -231,6 +240,8 @@ class UploadCSVAndSave(APIView):
                     "alert_after_seizure",
                     "cities_after_failure_count",
                     "last_known_location",
+                    "last_event_type_cd",
+                    "last_event_timestamp",
                 ],
                 batch_size=1000,
             )
@@ -265,6 +276,10 @@ class UploadCSVAndSave(APIView):
                     "alert_after_seizure": p.alert_after_seizure,
                     "cities_after_failure_count": p.cities_after_failure_count,
                     "last_known_location": p.last_known_location,
+                    "last_event_type_cd": p.last_event_type_cd,
+                    "last_event_timestamp": p.last_event_timestamp.isoformat()
+                    if p.last_event_timestamp
+                    else None,
                 }
                 for p in package_objs[:15]  # ✅ now showing 15 packages instead of 5
             ]

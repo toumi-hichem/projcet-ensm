@@ -22,5 +22,5 @@ urlpatterns = [
     path("states/<int:stateID>", OneStateAPIView.as_view(), name="one-state"),
     path("offices/<str:officeID>", OneOfficeAPIView.as_view(), name="one-office"),
     path("center/<str:centerID>", MajorCentersAPIView.as_view(), name="center"),
-    path("refresh/<str:parameters>", RefreshDashboard.as_view(), name="refresh"),
+    path("refresh/", RefreshDashboard.as_view(), name="refresh"),
 ]

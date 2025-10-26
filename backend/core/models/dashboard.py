@@ -1,9 +1,10 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Dashboard(models.Model):
     # Timestamp of when this KPI snapshot was last updated
-    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    timestamp = models.DateTimeField(default=timezone.now, db_index=True)
 
     # -------------------------------
     # 📦 Counts (Operational Volumes)

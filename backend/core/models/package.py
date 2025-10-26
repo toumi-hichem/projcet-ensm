@@ -22,6 +22,10 @@ class Package(models.Model):
         default=False
     )  # new events while still seized
     last_known_location = models.CharField(max_length=255, null=True, blank=True)
+    last_event_type_cd = models.CharField(
+        max_length=50, null=True, blank=True, db_index=True
+    )
+    last_event_timestamp = models.DateTimeField(null=True)
 
     # TODO:
     # success_afte_one_fail : int

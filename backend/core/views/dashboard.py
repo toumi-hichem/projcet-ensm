@@ -33,7 +33,7 @@ class DashboardApiView(APIView):
         kpi_field_name = request.data.get("kpi_field_name")
         start_date = request.data.get("start_date")
         end_date = request.data.get("end_date")
-        interval = request.data.get("interval", "daily")  # default to daily
+        interval = request.data.get("interval", "daily")
 
         # --- Validate required fields ---
         missing_fields = [
@@ -68,8 +68,6 @@ class DashboardApiView(APIView):
             )
 
         # --- Validate KPI field ---
-        from core.models import Dashboard, KPIHistory
-
         if not hasattr(Dashboard, kpi_field_name):
             logger.warning(f"Invalid KPI field requested: {kpi_field_name}")
             return Response(
@@ -89,7 +87,7 @@ class DashboardApiView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # --- Choose aggregation function ---
+        # --- Choose truncation function ---
         trunc_map = {
             "daily": TruncDay("timestamp"),
             "weekly": TruncWeek("timestamp"),
@@ -97,20 +95,17 @@ class DashboardApiView(APIView):
         }
         trunc_func = trunc_map[interval]
 
-        # --- Query and group by interval ---
+        # --- Query Dashboard directly ---
         queryset = (
-            KPIHistory.objects.filter(
-                kpi_name=kpi_field_name,
-                timestamp__range=(start_date, end_date),
-            )
+            Dashboard.objects.filter(timestamp__range=(start_date, end_date))
             .annotate(period=trunc_func)
             .values("period")
-            .annotate(avg_value=Avg("value"))
+            .annotate(avg_value=Avg(kpi_field_name))
             .order_by("period")
         )
 
         if not queryset.exists():
-            logger.info(f"No KPI history found for {kpi_field_name} in given range.")
+            logger.info(f"No Dashboard data found for {kpi_field_name} in given range.")
             return Response(
                 {
                     "success": False,
@@ -122,7 +117,7 @@ class DashboardApiView(APIView):
         # --- Helper: format "name" field depending on interval ---
         def format_name(dt: datetime, interval: str) -> str:
             if interval == "monthly":
-                return dt.strftime("%B")  # e.g., "October"
+                return dt.strftime("%B")  # e.g. "October"
             elif interval == "weekly":
                 return f"Week {dt.isocalendar().week}"
             else:  # daily
