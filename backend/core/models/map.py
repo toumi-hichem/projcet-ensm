@@ -1,4 +1,5 @@
 from django.db import models
+from .states_offices import State, PostalOffice
 
 
 class Alert(models.Model):
@@ -20,19 +21,19 @@ class Alert(models.Model):
     action_required = models.TextField()
     acknowledged = models.BooleanField(default=False)
 
-    state = models.ForeignKey(
-        "StateStats",
-        related_name="alerts",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-    )
     office = models.ForeignKey(
-        "OfficeStats",
-        related_name="alerts",
-        on_delete=models.CASCADE,
+        PostalOffice,
         null=True,
         blank=True,
+        related_name="alerts",
+        on_delete=models.SET_NULL,
+    )
+    state = models.ForeignKey(
+        State,
+        null=True,
+        blank=True,
+        related_name="alerts",
+        on_delete=models.SET_NULL,
     )
 
     def __str__(self):
@@ -40,21 +41,34 @@ class Alert(models.Model):
 
 
 class StateStats(models.Model):
-    state_name = models.TextField()
-    state_number = models.IntegerField()
-    state_id = models.TextField()
-    state_alternative_name = models.TextField()
+    state = models.OneToOneField(
+        State,
+        related_name="stats",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
 
-    pre_arrived_dispatches_count = models.IntegerField()
-    items_delivered = models.IntegerField()
-    undelivered_items = models.IntegerField()
+    pre_arrived_dispatches_count = models.IntegerField(default=0)
+    items_delivered = models.IntegerField(default=0)
+    undelivered_items = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"Stats for {self.state.name}"
 
 
 class OfficeStats(models.Model):
-    office_name = models.TextField()
-    office_id = models.TextField()
-    office_alternative_name = models.TextField()
+    office = models.OneToOneField(
+        PostalOffice,
+        related_name="stats",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
 
-    pre_arrived_dispatches_count = models.IntegerField()
-    items_delivered = models.IntegerField()
-    undelivered_items = models.IntegerField()
+    pre_arrived_dispatches_count = models.IntegerField(default=0)
+    items_delivered = models.IntegerField(default=0)
+    undelivered_items = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"Stats for {self.office.name}"

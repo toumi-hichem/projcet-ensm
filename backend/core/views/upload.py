@@ -3,35 +3,50 @@ from django.db.models import Q, Count, Sum, Max
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from core.models import Package, PackageEvent, PackageTransition, Dashboard
+from django.utils import timezone
+from core.models import (
+    Package,
+    PackageEvent,
+    PackageTransition,
+    Dashboard,
+    PostalOffice,
+    Alert,
+)
 from core.utils.cleaning import clean_package_data, sanitize_for_json
 from core.utils.transitions_helper import build_transitions, df_etab
+from core.utils.alert_defs import ALERT_DEFINITIONS
+import logging
+import pytz
 
+logger = logging.getLogger(__name__)
 MAX_ALLOWED_DAYS = 365 * 5  # Max 5 years
 SLA_DAYS = 15
 
+
 # ----------------------------
 # Upload CSV and save events + packages
 # ----------------------------
 
 
-# ----------------------------
-# Upload CSV and save events + packages
-# ----------------------------
 class UploadCSVAndSave(APIView):
     def post(self, request, format=None):
         file_obj = request.FILES.get("file")
         if not file_obj:
+            logger.warning("No file provided in upload request.")
             return Response(
                 {"error": "No file provided."}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        logger.info(f"Received file upload: {file_obj.name} ({file_obj.size} bytes)")
+
         try:
             # --- Clean CSV data ---
+            logger.info("Starting CSV data cleaning...")
             df_clean = clean_package_data(file_obj)
+            logger.debug(f"Cleaned dataframe shape: {df_clean.shape}")
 
             # --- Bulk insert PackageEvents ---
+            logger.info("Preparing bulk insert for PackageEvents...")
             event_fields = [
                 "MAILITM_FID",
                 "date",
@@ -41,8 +56,10 @@ class UploadCSVAndSave(APIView):
                 "duration_to_next_step",
             ]
 
-            # Convert 'date' to datetime just once
-            df_clean["date"] = pd.to_datetime(df_clean["date"], errors="coerce")
+            df_clean["date"] = pd.to_datetime(
+                df_clean["date"], errors="coerce", utc=True
+            )
+            logger.debug("Converted 'date' column to timezone-aware UTC datetime.")
 
             event_objs = [
                 PackageEvent(
@@ -58,16 +75,35 @@ class UploadCSVAndSave(APIView):
             PackageEvent.objects.bulk_create(
                 event_objs, batch_size=1000, ignore_conflicts=True
             )
+            logger.info(f"Inserted {len(event_objs)} PackageEvents successfully.")
+
+            def ensure_utc(dt_series):
+                # Localize or convert depending on awareness
+                return dt_series.apply(
+                    lambda x: x.tz_localize("UTC")
+                    if x.tzinfo is None
+                    else x.tz_convert("UTC")
+                )
+
+            df_clean["date"] = ensure_utc(df_clean["date"])
 
             # --- Bulk insert/update Packages ---
             unique_ids = df_clean["MAILITM_FID"].unique()
+            logger.info(f"Processing {len(unique_ids)} unique package IDs.")
+
             package_objs = []
 
             for mailitm_fid in unique_ids:
                 sub = df_clean[df_clean["MAILITM_FID"] == mailitm_fid].sort_values(
                     "date"
                 )
-                # --- NEW: derive last event info ---
+
+                if sub.empty:
+                    logger.warning(
+                        f"Skipping empty sub-data for MAILITM_FID={mailitm_fid}"
+                    )
+                    continue
+
                 last_event = sub.iloc[-1]
                 last_event_type_cd = last_event["EVENT_TYPE_CD"]
                 last_event_timestamp = last_event["date"]
@@ -78,6 +114,7 @@ class UploadCSVAndSave(APIView):
                 alert_after_success = False
                 last_known_location = last_event.get("établissement_postal")
 
+                # --- Customs logic ---
                 customs_codes = ["4", "6", "7", "31", "38"]
                 customs_rows = sub[
                     sub["EVENT_TYPE_CD"].isin(customs_codes)
@@ -95,24 +132,18 @@ class UploadCSVAndSave(APIView):
                     latest_code = latest_event["EVENT_TYPE_CD"]
                     latest_date = latest_event["date"]
 
-                    # Customs entry / hold events → seized
                     if latest_code in ["4", "6", "31"]:
                         flag_seized = True
                         seized_at = latest_date
-
-                        # Check if new events occur after seized_at without exit
                         later_events = sub[sub["date"] > seized_at]
                         if not later_events.empty and not any(
                             later_events["EVENT_TYPE_CD"].isin(["7", "38"])
                         ):
                             alert_after_seizure = True
 
-                    # Customs exit events → released
                     elif latest_code in ["7", "38"]:
                         flag_seized = False
                         exited_at = latest_date
-
-                        # Find previous seizure to compute duration
                         prev_seizure = customs_rows[
                             customs_rows["EVENT_TYPE_CD"].isin(["4", "6", "31"])
                         ]
@@ -120,20 +151,15 @@ class UploadCSVAndSave(APIView):
                             seized_at = prev_seizure.iloc[-1]["date"]
                             hold_duration = exited_at - seized_at
 
-                # --- end customs logic ---
-
                 success_rows = sub[sub["EVENT_TYPE_CD"] == "37"]
                 failure_rows = sub[sub["EVENT_TYPE_CD"] == "36"]
 
-                # --- New tracking variables ---
                 failure_before_success_count = 0
                 recovered_after_failure = False
 
                 if not success_rows.empty:
                     status_val = "success"
                     delivered_at = success_rows.iloc[0]["date"]
-
-                    # Find all failures that occurred *before* the first success
                     first_success_date = delivered_at
                     failures_before = failure_rows[
                         failure_rows["date"] < first_success_date
@@ -141,36 +167,219 @@ class UploadCSVAndSave(APIView):
                     failure_before_success_count = len(failures_before)
                     recovered_after_failure = failure_before_success_count > 0
 
-                    # You already have this logic to catch weird cases after success
                     if success_rows.index[0] < sub.index[-1]:
                         alert_after_success = True
-
                 elif not failure_rows.empty:
                     status_val = "failure"
                     failed_at = failure_rows.iloc[0]["date"]
-
-                    # --- Count cities visited after last failure ---
                     last_failure_index = sub[sub["EVENT_TYPE_CD"] == "36"].index[-1]
                     after_failure = sub.loc[last_failure_index + 1 :]
                     cities_after_failure_count = (
                         after_failure["EVENT_TYPE_CD"] == "32"
                     ).sum()
-                else:
-                    cities_after_failure_count = 0
 
-                total_duration = sub.iloc[0].get("total_duration")
-                country = sub.iloc[0].get("country")
+                # --- Alerts ---
+                alerts_to_create = []
+                logger.debug(f"Checking alerts for MAILITM_FID={mailitm_fid}")
+                local_tz = pytz.timezone(
+                    "Africa/Algiers"
+                )  # or whatever your system uses
+
+                transmissions = sub[sub["EVENT_TYPE_CD"].isin(["32", "33"])]
+                for _, ev in transmissions.iterrows():
+                    sent_date = ev["date"]
+                    if timezone.is_naive(sent_date):
+                        sent_date = timezone.make_aware(sent_date)
+                    dest = ev.get("next_établissement_postal")
+                    later = sub[
+                        (sub["établissement_postal"] == dest)
+                        & (sub["date"] > sent_date)
+                    ]
+                    if later.empty and (timezone.now() - sent_date).days > 3:
+                        alerts_to_create.append(("ALR001", dest, sent_date))
+
+                receptions = sub[sub["EVENT_TYPE_CD"].isin(["34", "35"])]
+                for _, ev in receptions.iterrows():
+                    rec_date = ev["date"]
+                    if timezone.is_naive(rec_date):
+                        rec_date = timezone.make_aware(rec_date)
+                    loc = ev["établissement_postal"]
+                    later = sub[
+                        (sub["date"] > rec_date)
+                        & (sub["EVENT_TYPE_CD"].isin(["36", "37"]))
+                    ]
+                    if (
+                        later.empty
+                        and (timezone.now() - rec_date).total_seconds() > 86400
+                    ):
+                        alerts_to_create.append(("ALR002", loc, rec_date))
+
+                for _, ev in receptions.iterrows():
+                    rec_date = ev["date"]
+                    loc = ev["établissement_postal"]
+                    later = sub[
+                        (sub["date"] > rec_date)
+                        & (sub["EVENT_TYPE_CD"].isin(["36", "37", "38"]))
+                    ]
+                    if later.empty and (timezone.now() - rec_date).days > 15:
+                        alerts_to_create.append(("ALR003", loc, rec_date))
+
+                hb_rows = sub[
+                    sub["établissement_postal"].str.contains(
+                        "Aéropostal", case=False, na=False
+                    )
+                ]
+                for _, ev in hb_rows.iterrows():
+                    sent = sub[
+                        (sub["date"] > ev["date"])
+                        & (sub["établissement_postal"] != ev["établissement_postal"])
+                    ]
+                    if sent.empty and (timezone.now() - ev["date"]).days >= 1:
+                        alerts_to_create.append(
+                            ("ALR004", ev["établissement_postal"], ev["date"])
+                        )
+
+                hb_to_cpx = sub[
+                    sub["établissement_postal"].str.contains(
+                        "Aéropostal", case=False, na=False
+                    )
+                    & sub["next_établissement_postal"].str.contains(
+                        "Alger CPX", case=False, na=False
+                    )
+                ]
+                for _, ev in hb_to_cpx.iterrows():
+                    later = sub[
+                        sub["établissement_postal"].str.contains(
+                            "Alger CPX", case=False, na=False
+                        )
+                        & (sub["date"] > ev["date"])
+                    ]
+                    if later.empty and (timezone.now() - ev["date"]).days > 2:
+                        alerts_to_create.append(("ALR005", "Alger CPX", ev["date"]))
+
+                cpx_to_ctni = sub[
+                    sub["établissement_postal"].str.contains(
+                        "Alger CPX", case=False, na=False
+                    )
+                    & sub["next_établissement_postal"].str.contains(
+                        "CTNI", case=False, na=False
+                    )
+                ]
+                for _, ev in cpx_to_ctni.iterrows():
+                    later = sub[
+                        sub["établissement_postal"].str.contains(
+                            "CTNI", case=False, na=False
+                        )
+                        & (sub["date"] > ev["date"])
+                    ]
+                    if later.empty and (timezone.now() - ev["date"]).days > 2:
+                        alerts_to_create.append(("ALR006", "CTNI", ev["date"]))
+
+                activity = sub[
+                    sub["établissement_postal"].str.contains(
+                        "CPX|CTNI", case=False, na=False
+                    )
+                ]
+                if not activity.empty:
+                    last_event_time = activity["date"].max()
+                    if (timezone.now() - last_event_time).total_seconds() > 10800:
+                        alerts_to_create.append(
+                            (
+                                "ALR007",
+                                activity.iloc[-1]["établissement_postal"],
+                                last_event_time,
+                            )
+                        )
+
+                for _, ev in receptions.iterrows():
+                    next_send = sub[
+                        (sub["date"] > ev["date"])
+                        & (sub["établissement_postal"] != ev["établissement_postal"])
+                    ]
+                    if next_send.empty and (timezone.now() - ev["date"]).days > 4:
+                        alerts_to_create.append(
+                            ("ALR008", ev["établissement_postal"], ev["date"])
+                        )
+
+                office_map = {
+                    o.name.lower(): o
+                    for o in PostalOffice.objects.select_related("state").all()
+                }
+                # Step 1: prepare all alerts in memory
+                alerts_to_insert = []
+
+                # prefetch existing alerts for these packages and timestamps
+                timestamps = [ts for _, _, ts in alerts_to_create]
+                existing_alerts_qs = Alert.objects.filter(
+                    alarm_code__in=[code for code, _, _ in alerts_to_create],
+                    timestamp__in=timestamps,
+                )
+                existing_alerts_set = set(
+                    (a.alarm_code, a.timestamp, a.office_id, a.state_id)
+                    for a in existing_alerts_qs
+                )
+
+                for code, office_name, event_timestamp in alerts_to_create:
+                    office_obj = (
+                        office_map.get(office_name.lower()) if office_name else None
+                    )
+                    state_obj = office_obj.state if office_obj else None
+
+                    # fallback: previous event's next_établissement_postal
+                    if not office_obj:
+                        prev_events = sub[sub["date"] < event_timestamp].sort_values(
+                            "date", ascending=False
+                        )
+                        if not prev_events.empty:
+                            fallback_office_name = prev_events.iloc[0].get(
+                                "next_établissement_postal"
+                            )
+                            if fallback_office_name:
+                                office_obj = office_map.get(
+                                    fallback_office_name.lower()
+                                )
+                                state_obj = office_obj.state if office_obj else None
+
+                    # check if already exists in memory
+                    key = (
+                        code,
+                        event_timestamp,
+                        office_obj.id if office_obj else None,
+                        state_obj.id if state_obj else None,
+                    )
+                    if key in existing_alerts_set:
+                        continue
+
+                    alerts_to_insert.append(
+                        Alert(
+                            alarm_code=code,
+                            title=ALERT_DEFINITIONS[code]["title"],
+                            trigger_condition=ALERT_DEFINITIONS[code][
+                                "trigger_condition"
+                            ],
+                            severity=ALERT_DEFINITIONS[code]["severity"],
+                            action_required=ALERT_DEFINITIONS[code]["action_required"],
+                            office=office_obj,
+                            state=state_obj,
+                            timestamp=event_timestamp,
+                        )
+                    )
+                    existing_alerts_set.add(key)  # avoid duplicates in same batch
+
+                # Step 2: bulk create
+                if alerts_to_insert:
+                    Alert.objects.bulk_create(alerts_to_insert, batch_size=1000)
+                    logger.info(f"Created {len(alerts_to_insert)} alerts in bulk")
 
                 package_objs.append(
                     Package(
                         mailitm_fid=mailitm_fid,
-                        country=country,
-                        total_duration=total_duration,
+                        country=sub.iloc[0].get("country"),
+                        total_duration=sub.iloc[0].get("total_duration"),
                         status=status_val,
                         delivered_at=delivered_at,
                         failed_at=failed_at,
                         alert_after_success=alert_after_success,
-                        # --- new fields added here ---
                         failure_before_success_count=failure_before_success_count,
                         recovered_after_failure=recovered_after_failure,
                         flag_seized=flag_seized,
@@ -180,48 +389,48 @@ class UploadCSVAndSave(APIView):
                         alert_after_seizure=alert_after_seizure,
                         cities_after_failure_count=cities_after_failure_count,
                         last_known_location=last_known_location,
-                        last_event_type_cd=last_event_type_cd,  # ✅
-                        last_event_timestamp=last_event_timestamp,  # ✅
+                        last_event_type_cd=last_event_type_cd,
+                        last_event_timestamp=last_event_timestamp,
                     )
                 )
 
-            # Bulk create
+            logger.info(
+                f"Prepared {len(package_objs)} Package objects for creation/update."
+            )
+
+            # --- Bulk create / update ---
             Package.objects.bulk_create(
                 package_objs, batch_size=1000, ignore_conflicts=True
             )
+            logger.info("Bulk create completed for new packages.")
 
-            # Bulk update existing
             existing_packages = Package.objects.filter(mailitm_fid__in=unique_ids)
             update_map = {p.mailitm_fid: p for p in package_objs}
 
             for pkg in existing_packages:
                 new_pkg = update_map.get(pkg.mailitm_fid)
                 if new_pkg:
-                    pkg.country = new_pkg.country
-                    pkg.total_duration = new_pkg.total_duration
-                    pkg.status = new_pkg.status
-                    pkg.delivered_at = new_pkg.delivered_at
-                    pkg.failed_at = new_pkg.failed_at
-                    pkg.alert_after_success = new_pkg.alert_after_success
+                    for field in [
+                        "country",
+                        "total_duration",
+                        "status",
+                        "delivered_at",
+                        "failed_at",
+                        "alert_after_success",
+                        "failure_before_success_count",
+                        "recovered_after_failure",
+                        "flag_seized",
+                        "seized_at",
+                        "exited_at",
+                        "hold_duration",
+                        "alert_after_seizure",
+                        "cities_after_failure_count",
+                        "last_known_location",
+                        "last_event_type_cd",
+                        "last_event_timestamp",
+                    ]:
+                        setattr(pkg, field, getattr(new_pkg, field))
 
-                    # --- new recovery fields ---
-                    pkg.failure_before_success_count = (
-                        new_pkg.failure_before_success_count
-                    )
-                    pkg.recovered_after_failure = new_pkg.recovered_after_failure
-
-                    # --- new customs fields ---
-                    pkg.flag_seized = new_pkg.flag_seized
-                    pkg.seized_at = new_pkg.seized_at
-                    pkg.exited_at = new_pkg.exited_at
-                    pkg.hold_duration = new_pkg.hold_duration
-                    pkg.alert_after_seizure = new_pkg.alert_after_seizure
-                    pkg.cities_after_failure_count = new_pkg.cities_after_failure_count
-                    pkg.last_known_location = new_pkg.last_known_location
-                    pkg.last_event_type_cd = new_pkg.last_event_type_cd  # ✅
-                    pkg.last_event_timestamp = new_pkg.last_event_timestamp
-
-            # ✅ Final bulk update
             Package.objects.bulk_update(
                 existing_packages,
                 [
@@ -245,45 +454,29 @@ class UploadCSVAndSave(APIView):
                 ],
                 batch_size=1000,
             )
+            logger.info("Bulk update completed for existing packages.")
 
-            # --- Build transitions (on-demand) ---
+            # --- Build transitions ---
+            logger.info("Building transitions...")
             build_transitions(df_clean, df_etab)
+            logger.info("Transitions built successfully.")
 
             sample_events = sanitize_for_json(df_clean[event_fields].head(15)).to_dict(
                 orient="records"
             )
-
-            # --- Sample events for response ---
             sample_packages = [
                 {
                     "MAILITM_FID": p.mailitm_fid,
-                    "country": p.country,
-                    "total_duration": str(p.total_duration)
-                    if p.total_duration
-                    else None,
                     "status": p.status,
+                    "country": p.country,
                     "delivered_at": p.delivered_at.isoformat()
                     if p.delivered_at
                     else None,
-                    "failed_at": p.failed_at.isoformat() if p.failed_at else None,
-                    "alert_after_success": p.alert_after_success,
-                    "failure_before_success_count": p.failure_before_success_count,
-                    "recovered_after_failure": p.recovered_after_failure,
-                    "flag_seized": p.flag_seized,
-                    "seized_at": p.seized_at.isoformat() if p.seized_at else None,
-                    "exited_at": p.exited_at.isoformat() if p.exited_at else None,
-                    "hold_duration": str(p.hold_duration) if p.hold_duration else None,
-                    "alert_after_seizure": p.alert_after_seizure,
-                    "cities_after_failure_count": p.cities_after_failure_count,
-                    "last_known_location": p.last_known_location,
-                    "last_event_type_cd": p.last_event_type_cd,
-                    "last_event_timestamp": p.last_event_timestamp.isoformat()
-                    if p.last_event_timestamp
-                    else None,
                 }
-                for p in package_objs[:15]  # ✅ now showing 15 packages instead of 5
+                for p in package_objs[:15]
             ]
 
+            logger.info("UploadCSVAndSave completed successfully.")
             return Response(
                 {
                     "status": "success",
@@ -296,6 +489,7 @@ class UploadCSVAndSave(APIView):
             )
 
         except Exception as e:
+            logger.exception("Error while processing uploaded CSV file.")
             return Response(
                 {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

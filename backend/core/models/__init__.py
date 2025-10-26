@@ -4,6 +4,7 @@ from .history import KPIHistory
 from .major_center import CPXStats, CTNIStats, AirportStats
 from .map import OfficeStats, StateStats, Alert
 from .package import Package
+from .states_offices import State, PostalOffice
 from .transition import PackageTransition
 
 
@@ -18,5 +19,7 @@ __all__ = [
     "StateStats",
     "Alert",
     "Package",
+    "State",
+    "PostalOffice",
     "PackageTransition",
 ]

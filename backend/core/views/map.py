@@ -7,25 +7,22 @@ from core.serializers import StateStatsSerializer, OfficeStatsSerializer
 
 class OneStateAPIView(APIView):
     """
-    Gives you KPIs as well as alerts about one state
+    Returns KPIs and alerts for a given state.
     """
-
-    # TODO: States with alarms, and their count.
-    # "statesWithAlarm: [state: {alarmCount:num, }]"
 
     def get(self, request, stateID):
         try:
-            # get latest state record for that ID
-            state = StateStats.objects.filter(state_id=stateID).order_by("-id").first()
-            if not state:
+            # Fetch StateStats for the given state ID
+            state_stats = StateStats.objects.filter(state_id=stateID).first()
+            if not state_stats:
                 return Response(
                     {"success": False, "message": f"No state found with ID {stateID}."},
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-            # fetch alerts for that state (latest first)
+            # Fetch alerts for this state
             alerts = (
-                Alert.objects.filter(state=state)
+                Alert.objects.filter(state=state_stats.state)
                 .order_by("-timestamp")
                 .values(
                     "id",
@@ -39,7 +36,7 @@ class OneStateAPIView(APIView):
                 )
             )
 
-            serialized_state = StateStatsSerializer(state).data
+            serialized_state = StateStatsSerializer(state_stats).data
 
             return Response(
                 {
@@ -62,18 +59,14 @@ class OneStateAPIView(APIView):
 
 class OneOfficeAPIView(APIView):
     """
-    Gives you KPIs as well as alerts about one postal office
+    Returns KPIs and alerts for a given postal office.
     """
 
     def get(self, request, officeID):
         try:
-            # get latest office record for that ID
-            office = (
-                OfficeStats.objects.filter(office_name=officeID)
-                .order_by("-office_name")
-                .first()
-            )
-            if not office:
+            # Fetch OfficeStats for the given office ID
+            office_stats = OfficeStats.objects.filter(office_id=officeID).first()
+            if not office_stats:
                 return Response(
                     {
                         "success": False,
@@ -82,9 +75,9 @@ class OneOfficeAPIView(APIView):
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
-            # fetch alerts for that office (latest first)
+            # Fetch alerts for this office
             alerts = (
-                Alert.objects.filter(office=office)
+                Alert.objects.filter(office=office_stats.office)
                 .order_by("-timestamp")
                 .values(
                     "id",
@@ -98,7 +91,7 @@ class OneOfficeAPIView(APIView):
                 )
             )
 
-            serialized_office = OfficeStatsSerializer(office).data
+            serialized_office = OfficeStatsSerializer(office_stats).data
 
             return Response(
                 {
