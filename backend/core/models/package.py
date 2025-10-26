@@ -10,7 +10,18 @@ class Package(models.Model):
     )  # 'success', 'failure', 'in_process'
     delivered_at = models.DateTimeField(null=True, blank=True)
     failed_at = models.DateTimeField(null=True, blank=True)
+    cities_after_failure_count = models.IntegerField(default=0)
     alert_after_success = models.BooleanField(default=False)
+    failure_before_success_count = models.IntegerField(default=0)
+    recovered_after_failure = models.BooleanField(default=False)
+    flag_seized = models.BooleanField(default=False)  # True = currently in customs
+    seized_at = models.DateTimeField(null=True, blank=True)
+    exited_at = models.DateTimeField(null=True, blank=True)
+    hold_duration = models.DurationField(null=True, blank=True)
+    alert_after_seizure = models.BooleanField(
+        default=False
+    )  # new events while still seized
+    last_known_location = models.CharField(max_length=255, null=True, blank=True)
 
     # TODO:
     # success_afte_one_fail : int
