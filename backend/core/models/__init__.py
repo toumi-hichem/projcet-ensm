@@ -6,6 +6,7 @@ from .map import OfficeStats, StateStats, Alert
 from .package import Package
 from .states_offices import State, PostalOffice
 from .transition import PackageTransition
+from .upload import UploadMetaData
 
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "State",
     "PostalOffice",
     "PackageTransition",
+    "UploadMetaData",
 ]

@@ -21,6 +21,7 @@ import {
   type KPIStat,
   type KPIRep,
 } from "../../types";
+import type { DashboardStyleType } from "../../styles/dashboardStyles";
 
 /* ---------------------------
   Fetch helpers (kept here for clarity)
@@ -91,7 +92,10 @@ const fetchHistoryKPIData = async (
 /* ---------------------------
   Component
 ---------------------------- */
-export const Bureauxdeposte: React.FC = () => {
+interface Props {
+  styles: DashboardStyleType;
+}
+export const Bureauxdeposte = ({ styles }: Props) => {
   const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
   const [selectedCard, setSelectedCard] = useState<KPIRep | null>(null);
   const [offices, setOffices] = useState<Office[]>([]);

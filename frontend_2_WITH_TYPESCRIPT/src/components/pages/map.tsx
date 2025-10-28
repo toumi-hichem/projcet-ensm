@@ -22,6 +22,7 @@ import {
 } from "../constants";
 import type { OneStateResponse, OneOfficeResponse } from "../../types";
 import type { Feature } from "../../types/geojson";
+import type { DashboardStyleType } from "../../styles/dashboardStyles";
 
 const geoUrl = "/algeria.json";
 
@@ -50,8 +51,10 @@ const fetchOfficeData = async (
   }
   return await res.json();
 };
-
-export function AlgeriaMapPage() {
+interface Props {
+  styles: DashboardStyleType;
+}
+export function AlgeriaMapPage({ styles }: Props) {
   const [oneState, setOneState] = useState<OneStateResponse | null>(null);
   const [oneOffice, setOneOffice] = useState<OneOfficeResponse | null>(null);
   const [stateID, setStateID] = useState<number | null>(null);

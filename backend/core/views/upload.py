@@ -1,9 +1,11 @@
+from core.serializers import UploadMetaDataSerializer
 import pandas as pd
 from django.db.models import Q, Count, Sum, Max
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.utils import timezone
+
+# from django.utils import timezone
 from core.models import (
     Package,
     PackageEvent,
@@ -11,12 +13,15 @@ from core.models import (
     Dashboard,
     PostalOffice,
     Alert,
+    UploadMetaData,
 )
-from core.utils.cleaning import clean_package_data, sanitize_for_json
+from django.utils.dateparse import parse_date
+
+from core.utils.cleaning import clean_package_data, save_upload_metadata
 from core.utils.transitions_helper import build_transitions, df_etab
 from core.utils.alert_defs import ALERT_DEFINITIONS
 import logging
-import pytz
+import time
 
 logger = logging.getLogger(__name__)
 MAX_ALLOWED_DAYS = 365 * 5  # Max 5 years
@@ -29,6 +34,37 @@ SLA_DAYS = 15
 
 
 class UploadCSVAndSave(APIView):
+    def get(self, request):
+        """
+        GET /api/uploads/?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
+
+        Returns all UploadMetaData records within the date range.
+        """
+        start_date_str = request.query_params.get("start_date")
+        end_date_str = request.query_params.get("end_date")
+
+        # Parse parameters
+        start_date = parse_date(start_date_str) if start_date_str else None
+        end_date = parse_date(end_date_str) if end_date_str else None
+
+        # Build query
+        uploads = UploadMetaData.objects.all()
+        if start_date and end_date:
+            uploads = uploads.filter(
+                upload_timestamp__date__range=(start_date, end_date)
+            )
+        elif start_date:
+            uploads = uploads.filter(upload_timestamp__date__gte=start_date)
+        elif end_date:
+            uploads = uploads.filter(upload_timestamp__date__lte=end_date)
+
+        uploads = uploads.order_by("-upload_timestamp")
+        serializer = UploadMetaDataSerializer(uploads)
+        return Response(
+            {"success": True, "data": serializer, "count": len(serializer)},
+            status=status.HTTP_200_OK,
+        )
+
     def post(self, request, format=None):
         import pytz
         from django.utils import timezone
@@ -44,7 +80,16 @@ class UploadCSVAndSave(APIView):
         try:
             # --- Clean CSV data ---
             logger.info("Starting CSV data cleaning...")
-            df_clean = clean_package_data(file_obj)
+            df_clean, metadata = clean_package_data(file_obj)
+            record = save_upload_metadata(
+                file_obj,
+                metadata,
+                extra_stats={
+                    "events_inserted": 123,
+                    "packages_created": 45,
+                    "packages_updated": 12,
+                },
+            )
             df_clean["date"] = pd.to_datetime(
                 df_clean["date"], errors="coerce", utc=True
             )

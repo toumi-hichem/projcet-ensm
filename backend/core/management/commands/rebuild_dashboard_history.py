@@ -1,4 +1,3 @@
-# core/management/commands/rebuild_dashboard_history.py
 from django.core.management.base import BaseCommand
 from datetime import datetime, timedelta
 import requests

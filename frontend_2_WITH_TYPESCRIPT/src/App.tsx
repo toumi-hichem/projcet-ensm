@@ -7,17 +7,19 @@ import {
   AlgeriaMapPage,
   Bureauxdeposte,
   AlgeriaMapPage2,
+  UploadPage,
 } from "./components";
+import type { Pages } from "./types";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState<Pages>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
 
-  const showPage = (page) => {
+  const showPage = (page: Pages) => {
     setActiveTab(page);
   };
 
@@ -27,6 +29,7 @@ function App() {
       bureauxdeposte: "Bureaux de poste",
       algeriamap: "Algeria Map",
       map2: "Map 2",
+      upload: "Upload",
     };
     return titles[activeTab];
   };
@@ -71,6 +74,7 @@ function App() {
             <Bureauxdeposte styles={dashboardStyles} />
           )}
           {activeTab === "map2" && <AlgeriaMapPage2 styles={dashboardStyles} />}
+          {activeTab === "upload" && <UploadPage styles={dashboardStyles} />}
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ from .major_centers import (
 from .office import StateStatsSerializer, OfficeStatsSerializer
 from .package import PackageSerializer, PackageEventSerializer
 from .transition import PackageTransitionSerializer
+from .upload import UploadMetaDataSerializer
 
 __all__ = [
     "DashboardSerializer",
@@ -20,4 +21,5 @@ __all__ = [
     "PackageSerializer",
     "PackageEventSerializer",
     "PackageTransitionSerializer",
+    "UploadMetaDataSerializer",
 ]

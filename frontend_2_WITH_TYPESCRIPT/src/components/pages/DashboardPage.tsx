@@ -13,6 +13,7 @@ import {
 import { useEffect } from "react";
 import type { Dashboard, KPIHistory, SelectedCardType } from "../../types";
 import { KPI_TO_TITLE_AND_COLOR } from "../constants/kpi_titles";
+import type { DashboardStyleType } from "../../styles/dashboardStyles";
 
 const fetchDashboardData = async () => {
   console.log("fetching data");
@@ -109,8 +110,10 @@ const getstates = async (path: string) => {
 
   return stats;
 };
-
-export function DashboardPage({ styles }) {
+interface Props {
+  styles: DashboardStyleType;
+}
+export function DashboardPage({ styles }: Props) {
   // State to manage which stat card is selected
   const [selectedCard, setSelectedCard] = useState<SelectedCardType>(null);
   const [stats, setStats] = useState<Dashboard>();
