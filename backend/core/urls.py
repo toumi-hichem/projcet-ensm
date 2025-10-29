@@ -1,3 +1,4 @@
+from core.views.office_and_states import StateAndPostalOfficeApiView
 from core.views.rebuild_kpi_snapshots import RebuildSnapshotsAPIView
 from django.urls import path
 from .views import (
@@ -28,5 +29,10 @@ urlpatterns = [
         "rebuild_snapshots/",
         RebuildSnapshotsAPIView.as_view(),
         name="rebuild_snapshots",
+    ),
+    path(
+        "state-office/",
+        StateAndPostalOfficeApiView.as_view(),
+        name="state-and-postal-office-data",
     ),
 ]

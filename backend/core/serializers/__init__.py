@@ -9,6 +9,7 @@ from .office import StateStatsSerializer, OfficeStatsSerializer
 from .package import PackageSerializer, PackageEventSerializer
 from .transition import PackageTransitionSerializer
 from .upload import UploadMetaDataSerializer
+from .state_and_office import StateSerializer, PostalOfficeSerializer
 
 __all__ = [
     "DashboardSerializer",
@@ -22,4 +23,6 @@ __all__ = [
     "PackageEventSerializer",
     "PackageTransitionSerializer",
     "UploadMetaDataSerializer",
+    "StateSerializer",
+    "PostalOfficeSerializer",
 ]

@@ -54,3 +54,24 @@ export interface OneOfficeResponse {
   success: boolean;
   message?: string;
 }
+
+// ─────────────────────────────────────────────
+// States and their postal offices
+// ─────────────────────────────────────────────
+export interface PostalOffice {
+  id: number;
+  name: string;
+}
+
+export interface State {
+  id: number;
+  name: string;
+  code: string | null;
+  geometry: Record<string, any> | null;
+  postal_offices: PostalOffice[];
+}
+
+export interface StatePostalOfficeResponse {
+  success: boolean;
+  data: State[];
+}

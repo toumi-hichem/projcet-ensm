@@ -1,30 +1,23 @@
-import json
 import random
 import logging
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 from core.models import (
     CTNIStats,
     CPXStats,
     AirportStats,
     StateStats,
     OfficeStats,
+    State,
+    PostalOffice,
+    Alert,
 )
 
 logger = logging.getLogger(__name__)
 
 
-# Usage:
-# python manage.py seed --wilayas "core/data/wilayadata.json" --offices "core/data/wilaya_post_offices.json"
 class Command(BaseCommand):
-    help = "Seeds database with CTNI, CPX, Airport, State, and Office stats"
-
-    def add_arguments(self, parser):
-        parser.add_argument(
-            "--wilayas", type=str, required=True, help="Path to wilayas JSON file"
-        )
-        parser.add_argument(
-            "--offices", type=str, required=True, help="Path to offices JSON file"
-        )
+    help = "Seeds database with CTNI, CPX, Airport, State, and Office stats, plus random alerts"
 
     def handle(self, *args, **options):
         try:
@@ -35,6 +28,7 @@ class Command(BaseCommand):
                 AirportStats,
                 StateStats,
                 OfficeStats,
+                Alert,
             ]
             for model in models_to_clear:
                 count = model.objects.count()
@@ -45,16 +39,6 @@ class Command(BaseCommand):
                     logger.info(f"ℹ️ No {model.__name__} records to delete.")
 
             logger.info("✅ Old data cleared.\n")
-
-            wilayas_path = options["wilayas"]
-            offices_path = options["offices"]
-
-            logger.info(f"📂 Loading wilayas from {wilayas_path}")
-            logger.info(f"📂 Loading offices from {offices_path}")
-            with open(wilayas_path, "r", encoding="utf-8") as f:
-                wilayas_data = json.load(f)
-            with open(offices_path, "r", encoding="utf-8") as f:
-                offices_data = json.load(f)
 
             # --- Create KPI base records ---
             logger.info("📊 Creating CTNI, CPX, and Airport stats records...")
@@ -109,46 +93,63 @@ class Command(BaseCommand):
 
             logger.info("✅ KPI base records created.\n")
 
-            # --- Map Data (Wilayas and Offices) ---
-            logger.info("🗺️ Seeding wilayas and offices...")
-            state_objects, office_objects = [], []
-
-            for w in wilayas_data.get("wilayas", []):
-                state_objects.append(
-                    StateStats(
-                        state_name=w["nom"],
-                        state_number=int(w["code"]),
-                        state_id=str(w["id"]),
-                        state_alternative_name=w.get("nom", ""),
-                        pre_arrived_dispatches_count=w["kpi"].get(
-                            "Nombre de dépêches pré-arrivées", 0
-                        ),
-                        items_delivered=w["kpi"].get("Nombre denvois livrés", 0),
-                        undelivered_items=w["kpi"].get("Nombre denvois non livrés ", 0),
-                    )
+            # --- State Stats ---
+            logger.info("🏛️ Creating StateStats for all states...")
+            states = list(State.objects.all())
+            state_stats = [
+                StateStats(
+                    state=s,
+                    pre_arrived_dispatches_count=random.randint(50, 500),
+                    items_delivered=random.randint(500, 1500),
+                    undelivered_items=random.randint(10, 100),
                 )
-            StateStats.objects.bulk_create(state_objects)
-            logger.info(f"✅ Created {len(state_objects)} StateStats records.")
+                for s in states
+            ]
+            StateStats.objects.bulk_create(state_stats)
+            logger.info(f"✅ Created {len(state_stats)} StateStats records.")
 
-            all_states = list(StateStats.objects.all())
+            # --- Office Stats ---
+            logger.info("🏢 Creating OfficeStats for all postal offices...")
+            offices = list(PostalOffice.objects.all())
+            office_stats = [
+                OfficeStats(
+                    office=o,
+                    pre_arrived_dispatches_count=random.randint(10, 200),
+                    items_delivered=random.randint(100, 600),
+                    undelivered_items=random.randint(5, 40),
+                )
+                for o in offices
+            ]
+            OfficeStats.objects.bulk_create(office_stats)
+            logger.info(f"✅ Created {len(office_stats)} OfficeStats records.")
 
-            for state in all_states:
-                office_names = offices_data.get(f"{int(state.state_number):02d}", [])
-                for idx, office_name in enumerate(office_names):
-                    office_objects.append(
-                        OfficeStats(
-                            office_name=office_name,
-                            office_id=f"{state.state_number}-{idx + 1}",
-                            office_alternative_name=office_name,
-                            pre_arrived_dispatches_count=state.pre_arrived_dispatches_count,
-                            items_delivered=state.items_delivered,
-                            undelivered_items=state.undelivered_items,
+            # --- Random Alerts ---
+            logger.info("🚨 Creating random alerts for each state...")
+            alerts = []
+            alarm_choices = [choice[0] for choice in Alert.AlarmType.choices]
+            severities = ["low", "medium", "high"]
+
+            for state in states:
+                for _ in range(random.randint(1, 3)):  # 1–3 alerts per state
+                    alarm_code = random.choice(alarm_choices)
+                    alerts.append(
+                        Alert(
+                            state=state,
+                            alarm_code=alarm_code,
+                            title=f"Alerte {alarm_code} pour {state.name}",
+                            trigger_condition="Condition simulée aléatoire",
+                            severity=random.choice(severities),
+                            action_required="Vérifier et prendre des mesures correctives",
+                            acknowledged=random.choice([True, False]),
+                            timestamp=timezone.now(),
                         )
                     )
-            OfficeStats.objects.bulk_create(office_objects)
-            logger.info(f"✅ Created {len(office_objects)} OfficeStats records.\n")
+
+            Alert.objects.bulk_create(alerts)
+            logger.info(f"✅ Created {len(alerts)} alerts for states.")
 
             logger.info("🎉 Database seeding complete!")
+
         except Exception as e:
             logger.exception("❌ Seeder encountered an error:")
             raise CommandError(f"Seeder failed: {e}")
