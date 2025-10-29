@@ -1,3 +1,4 @@
+from core.views.rebuild_kpi_snapshots import RebuildSnapshotsAPIView
 from django.urls import path
 from .views import (
     DashboardApiView,
@@ -23,4 +24,9 @@ urlpatterns = [
     path("offices/<str:officeID>", OneOfficeAPIView.as_view(), name="one-office"),
     path("center/<str:centerID>", MajorCentersAPIView.as_view(), name="center"),
     path("refresh/", RefreshDashboard.as_view(), name="refresh"),
+    path(
+        "rebuild_snapshots/",
+        RebuildSnapshotsAPIView.as_view(),
+        name="rebuild_snapshots",
+    ),
 ]

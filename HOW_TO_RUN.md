@@ -7,7 +7,7 @@ python manage.py seed_states_and_offices
 ## Upload
 ```
 
-curl -X POST -F "file=@./backend/core/data/filtered_data_with_recptcl.csv" http://localhost:8000/upload/ > curl_logs.txt
+curl -X POST -F "file=@core/data/filtered_data_with_recptcl.csv" http://localhost:8000/upload/ > curl_logs.txt
 
 ```
 

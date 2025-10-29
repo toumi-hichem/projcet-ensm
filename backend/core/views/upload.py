@@ -4,6 +4,9 @@ from django.db.models import Q, Count, Sum, Max
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import pytz
+from django.utils import timezone
+import pandas as pd
 
 # from django.utils import timezone
 from core.models import (
@@ -43,11 +46,9 @@ class UploadCSVAndSave(APIView):
         start_date_str = request.query_params.get("start_date")
         end_date_str = request.query_params.get("end_date")
 
-        # Parse parameters
         start_date = parse_date(start_date_str) if start_date_str else None
         end_date = parse_date(end_date_str) if end_date_str else None
 
-        # Build query
         uploads = UploadMetaData.objects.all()
         if start_date and end_date:
             uploads = uploads.filter(
@@ -59,17 +60,16 @@ class UploadCSVAndSave(APIView):
             uploads = uploads.filter(upload_timestamp__date__lte=end_date)
 
         uploads = uploads.order_by("-upload_timestamp")
-        serializer = UploadMetaDataSerializer(uploads)
+
+        # ✅ IMPORTANT: add many=True here
+        serializer = UploadMetaDataSerializer(uploads, many=True)
+
         return Response(
-            {"success": True, "data": serializer, "count": len(serializer)},
+            {"success": True, "data": serializer.data, "count": len(uploads)},
             status=status.HTTP_200_OK,
         )
 
     def post(self, request, format=None):
-        import pytz
-        from django.utils import timezone
-        import pandas as pd
-
         file_obj = request.FILES.get("file")
         if not file_obj:
             logger.warning("No file provided in upload request.")
@@ -412,23 +412,29 @@ class UploadCSVAndSave(APIView):
 
             # --- Bulk create/update packages ---
             if package_objs:
+                logger.info(f"Bulk creating {len(package_objs)} packages")
                 Package.objects.bulk_create(
                     package_objs, batch_size=1000, ignore_conflicts=True
                 )
                 logger.info(f"Created {len(package_objs)} new packages.")
+            else:
+                logger.info("no packages to create")
 
-            if existing_packages_map:
+            existing_to_update = [p for p in existing_packages_map.values() if p.pk]
+            if existing_to_update:
+                logger.info(f"Bulk updating {len(existing_to_update)} packages")
                 Package.objects.bulk_update(
-                    list(existing_packages_map.values()),
+                    existing_to_update,
                     fields=[
                         f.name
                         for f in Package._meta.get_fields()
-                        if f.concrete and not f.many_to_many
+                        if f.concrete and not f.many_to_many and f.name != "id"
                     ],
                     batch_size=1000,
                 )
-                logger.info(f"Updated {len(existing_packages_map)} existing packages.")
-
+                logger.info(f"Updated {len(existing_to_update)} existing packages.")
+            else:
+                logger.info("no existing packages to update")
             # --- Bulk create alerts ---
             if all_alerts_to_create:
                 Alert.objects.bulk_create(all_alerts_to_create, batch_size=1000)
