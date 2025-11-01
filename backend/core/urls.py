@@ -1,9 +1,11 @@
+from core.views.alerts import AcknowledgeAlertView
 from core.views.office_and_states import StateAndPostalOfficeApiView
 from core.views.rebuild_kpi_snapshots import RebuildSnapshotsAPIView
 from django.urls import path
 from .views import (
     DashboardApiView,
     RefreshDashboard,
+    UploadBagsCSV,
     UploadCSVAndSave,
     PackageStatsAPIView,
     TransitionReportAPIView,
@@ -14,6 +16,7 @@ from .views import (
 
 urlpatterns = [
     path("upload/", UploadCSVAndSave.as_view(), name="upload-csv"),
+    path("bag-upload/", UploadBagsCSV.as_view(), name="bag-upload"),
     path("stats/", PackageStatsAPIView.as_view(), name="package-stats"),  # Deprecated
     path(
         "transitions/report/",
@@ -34,5 +37,10 @@ urlpatterns = [
         "state-office/",
         StateAndPostalOfficeApiView.as_view(),
         name="state-and-postal-office-data",
+    ),
+    path(
+        "alerts/<int:alert_id>/acknowledge/",
+        AcknowledgeAlertView.as_view(),
+        name="acknowledge-alert",
     ),
 ]

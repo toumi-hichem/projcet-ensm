@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { DashboardStyleType } from "../../styles/dashboardStyles";
+import { toast } from "sonner";
 
 const logoUrl = "/poste-algerie-seeklogo.svg";
 
@@ -12,8 +13,6 @@ interface Props {
 
 function Header({ setSidebarOpen, sidebarOpen, getPageTitle, styles }: Props) {
   const [loading, setLoading] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-
   const callAPI = async (
     endpoint: string,
     method: string = "GET",
@@ -26,7 +25,6 @@ function Header({ setSidebarOpen, sidebarOpen, getPageTitle, styles }: Props) {
   ) => {
     try {
       setLoading(endpoint);
-      setMessage(null);
       const response = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}${endpoint}`,
         {
@@ -37,12 +35,12 @@ function Header({ setSidebarOpen, sidebarOpen, getPageTitle, styles }: Props) {
       );
       const data = await response.json();
       if (response.ok) {
-        setMessage(`✅ Success: ${data.message || data.status}`);
+        toast.success(`✅ Success: ${data.message || data.status}`);
       } else {
-        setMessage(`❌ Error: ${data.error || "Unexpected error"}`);
+        toast.error(`❌ Error: ${data.error || "Unexpected error"}`);
       }
     } catch (error) {
-      setMessage(`⚠️ Network error: ${error}`);
+      toast.error(`⚠️ Network error: ${error}`);
     } finally {
       setLoading(null);
     }
@@ -134,25 +132,6 @@ function Header({ setSidebarOpen, sidebarOpen, getPageTitle, styles }: Props) {
             : "Create KPIs History"}
         </button>
       </div>
-
-      {/* Optional message display */}
-      {message && (
-        <div
-          style={{
-            position: "absolute",
-            top: "70px",
-            right: "20px",
-            background: "white",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-            padding: "8px 12px",
-            fontSize: "14px",
-            color: message.startsWith("✅") ? "green" : "red",
-          }}
-        >
-          {message}
-        </div>
-      )}
     </div>
   );
 }

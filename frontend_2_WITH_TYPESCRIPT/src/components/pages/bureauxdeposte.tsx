@@ -22,6 +22,8 @@ import {
   type KPIRep,
 } from "../../types";
 import type { DashboardStyleType } from "../../styles/dashboardStyles";
+import { KpiCard } from "../ui/kpi-card";
+import { formatValue } from "../util";
 
 /* ---------------------------
   Fetch helpers (kept here for clarity)
@@ -101,7 +103,7 @@ export const Bureauxdeposte = ({ styles }: Props) => {
   const [offices, setOffices] = useState<Office[]>([]);
   const historyCache = useRef<Record<string, any[]>>({}); // cache per kpiFieldName
   const isMounted = useRef(true);
-  const [data, setData] = useState<MajorCenterAllResponse["data"] | null>(null);
+  // const [data, setData] = useState<MajorCenterAllResponse["data"] | null>(null);
   const [activeStat, setActiveStat] = useState<KPIStat | null>(null);
 
   useEffect(() => {
@@ -115,25 +117,13 @@ export const Bureauxdeposte = ({ styles }: Props) => {
   }, [offices, selectedCard, selectedOffice?.stats]);
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      const data = await fetchMajorCenter("all");
-      if (!data.success) {
-        console.error("Failed to load data: ", data.message);
-        return;
-      }
-      setData(data.data as MajorCenterAllResponse);
-      console.log("got this overall data: ", data.data);
-    };
-    fetchAllData();
-  }, []);
-
-  useEffect(() => {
     isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
   }, []);
 
+  // Fetch all centers metadata (no mapping)
   useEffect(() => {
     const centerConfig: {
       id: MajorCenterID;
@@ -154,62 +144,27 @@ export const Bureauxdeposte = ({ styles }: Props) => {
 
       for (const cfg of centerConfig) {
         const res = await fetchMajorCenter(cfg.id);
-        if (!res.success || !res.data) {
-          // skip if failed
-          continue;
-        }
+        if (!res.success || !res.data) continue;
 
-        // pick the appropriate object from res.data
         const centerData: CTNIStats | CPXStats | AirportStats | undefined =
           cfg.id === "ctni"
-            ? (res.data.ctni as CTNIStats | undefined)
+            ? res.data.ctni
             : cfg.id === "cpx"
-              ? (res.data.cpx as CPXStats | undefined)
-              : (res.data.airport as AirportStats | undefined);
+              ? res.data.cpx
+              : res.data.airport;
 
         if (!centerData) continue;
 
-        const stats: KPIStat[] = [];
-
-        // mapping is expected: { "Display Title": "field_name", ... }
-        for (const [title, fieldNameRaw] of Object.entries(mapping)) {
-          const fieldName = `${cfg.id}_${fieldNameRaw}`;
-          // safely read value from centerData (may be undefined)
-          // use `any` indexing to avoid deep TS constraints, but we type-check usage above
-          const rawValue = (centerData as any)[fieldName];
-          const value =
-            rawValue === undefined || rawValue === null ? null : rawValue;
-
-          // fetch history (cached)
-          let chartData = historyCache.current[fieldName as string];
-          if (!chartData) {
-            try {
-              // NOTE: cast to union of keys acceptable by fetchHistoryKPIData
-              // fieldName strings should be the exact field names used by your backend.
-              console.log("fetching with these data: ", fieldName, " and", cfg);
-              const hist = await fetchHistoryKPIData(
-                fieldName as
-                  | keyof CTNIStats
-                  | keyof CPXStats
-                  | keyof AirportStats,
-                cfg.id,
-              );
-              chartData = hist ?? [];
-            } catch (err) {
-              console.error("history fetch error", fieldName, err);
-              chartData = [];
-            }
-            historyCache.current[fieldName as string] = chartData;
-          }
-
-          stats.push({
-            key: fieldName,
-            title,
-            value,
+        // Convert each field directly into a KPIStat
+        const stats: KPIStat[] = Object.entries(centerData)
+          .filter(([key]) => key !== "id" && key !== "timestamp")
+          .map(([key, value]) => ({
+            key: key as keyof CTNIStats | keyof CPXStats | keyof AirportStats,
+            title: key, // use raw field name as title
+            value: value as any,
             color: "#2e75e7ff",
-            chartData,
-          });
-        }
+            chartData: [], // empty initially, fetch only on click
+          }));
 
         loaded.push({
           id: cfg.id,
@@ -221,9 +176,6 @@ export const Bureauxdeposte = ({ styles }: Props) => {
 
       if (!isMounted.current) return;
       setOffices(loaded);
-      console.log("Loaded data: ", loaded);
-
-      // auto-select first office for convenience (optional)
       if (loaded.length > 0) setSelectedOffice(loaded[0]);
     };
 
@@ -235,12 +187,38 @@ export const Bureauxdeposte = ({ styles }: Props) => {
     setSelectedCard(null);
   };
 
-  const handleCardClick = (kpi: KPIRep) => {
-    console.log("DEBUG: [page]", kpi);
+  const handleCardClick = async (kpi: KPIRep) => {
+    if (!selectedOffice) return;
 
     setSelectedCard((prev) => (prev?.index === kpi.index ? null : kpi));
-  };
 
+    const fieldName = kpi.key;
+    const cacheKey = `${selectedOffice.id}_${fieldName}`;
+    if (!historyCache.current[cacheKey]) {
+      try {
+        const hist = await fetchHistoryKPIData(fieldName, selectedOffice.id);
+        historyCache.current[cacheKey] = hist ?? [];
+      } catch (err) {
+        console.error("Error fetching KPI history:", err);
+        historyCache.current[cacheKey] = [];
+      }
+    }
+
+    // Update the chartData in state
+    setOffices((prev) =>
+      prev.map((office) => {
+        if (office.id !== selectedOffice.id) return office;
+        return {
+          ...office,
+          stats: office.stats.map((s) =>
+            s.key === fieldName
+              ? { ...s, chartData: historyCache.current[cacheKey] }
+              : s,
+          ),
+        };
+      }),
+    );
+  };
   return (
     <div
       style={{
@@ -312,11 +290,31 @@ export const Bureauxdeposte = ({ styles }: Props) => {
             border: "1px solid #e5e5e5",
           }}
         >
-          <StatCards
+          {/* 📈 KPI Section */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {selectedOffice.stats.map((one_stat) => {
+              return (
+                <KpiCard
+                  title={one_stat.title}
+                  value={one_stat.value ?? "N/A"}
+                  onCardClick={handleCardClick}
+                  kpiKey={one_stat.key}
+                  index={one_stat.index}
+                />
+              );
+            })}
+          </div>
+          {/*<StatCards
             office={selectedOffice}
             onCardClick={handleCardClick}
             // selectedCard={selectedCard}
-          />
+          />*/}
 
           {/* charts */}
           <div

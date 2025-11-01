@@ -1,4 +1,4 @@
-from core.serializers import UploadMetaDataSerializer
+from core.serializers import BagUploadMetaDataSerializer, UploadMetaDataSerializer
 import pandas as pd
 from django.db.models import Q, Count, Sum, Max
 from rest_framework import status
@@ -10,6 +10,8 @@ import pandas as pd
 
 # from django.utils import timezone
 from core.models import (
+    Bag,
+    BagUploadMetaData,
     Package,
     PackageEvent,
     PackageTransition,
@@ -24,7 +26,7 @@ from core.utils.cleaning import clean_package_data, save_upload_metadata
 from core.utils.transitions_helper import build_transitions, df_etab
 from core.utils.alert_defs import ALERT_DEFINITIONS
 import logging
-import time
+
 
 logger = logging.getLogger(__name__)
 MAX_ALLOWED_DAYS = 365 * 5  # Max 5 years
@@ -40,15 +42,18 @@ class UploadCSVAndSave(APIView):
     def get(self, request):
         """
         GET /api/uploads/?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
-
-        Returns all UploadMetaData records within the date range.
+        Returns both Package and Bag upload metadata in the given date range.
         """
+        logger.debug("Getting upload history")
         start_date_str = request.query_params.get("start_date")
         end_date_str = request.query_params.get("end_date")
 
         start_date = parse_date(start_date_str) if start_date_str else None
         end_date = parse_date(end_date_str) if end_date_str else None
 
+        # ----------------------------
+        # PACKAGE UPLOAD METADATA
+        # ----------------------------
         uploads = UploadMetaData.objects.all()
         if start_date and end_date:
             uploads = uploads.filter(
@@ -58,18 +63,39 @@ class UploadCSVAndSave(APIView):
             uploads = uploads.filter(upload_timestamp__date__gte=start_date)
         elif end_date:
             uploads = uploads.filter(upload_timestamp__date__lte=end_date)
-
         uploads = uploads.order_by("-upload_timestamp")
 
-        # ✅ IMPORTANT: add many=True here
-        serializer = UploadMetaDataSerializer(uploads, many=True)
+        upload_serializer = UploadMetaDataSerializer(uploads, many=True)
+
+        # ----------------------------
+        # BAG UPLOAD METADATA
+        # ----------------------------
+        bag_uploads = BagUploadMetaData.objects.all()
+        if start_date and end_date:
+            bag_uploads = bag_uploads.filter(
+                upload_timestamp__date__range=(start_date, end_date)
+            )
+        elif start_date:
+            bag_uploads = bag_uploads.filter(upload_timestamp__date__gte=start_date)
+        elif end_date:
+            bag_uploads = bag_uploads.filter(upload_timestamp__date__lte=end_date)
+        bag_uploads = bag_uploads.order_by("-upload_timestamp")
+
+        bag_upload_serializer = BagUploadMetaDataSerializer(bag_uploads, many=True)
 
         return Response(
-            {"success": True, "data": serializer.data, "count": len(uploads)},
+            {
+                "success": True,
+                "count": len(upload_serializer.data) + len(bag_upload_serializer.data),
+                "packages": upload_serializer.data,
+                "bags": bag_upload_serializer.data,
+            },
             status=status.HTTP_200_OK,
         )
 
     def post(self, request, format=None):
+        logger.debug("Uploading a package data")
+
         file_obj = request.FILES.get("file")
         if not file_obj:
             logger.warning("No file provided in upload request.")
@@ -81,6 +107,7 @@ class UploadCSVAndSave(APIView):
             # --- Clean CSV data ---
             logger.info("Starting CSV data cleaning...")
             df_clean, metadata = clean_package_data(file_obj)
+
             record = save_upload_metadata(
                 file_obj,
                 metadata,
@@ -104,17 +131,88 @@ class UploadCSVAndSave(APIView):
                 "next_établissement_postal",
                 "duration_to_next_step",
             ]
-            event_objs = [
-                PackageEvent(
-                    mailitm_fid=row["MAILITM_FID"],
-                    date=row["date"],
-                    event_type_cd=row.get("EVENT_TYPE_CD"),
-                    etablissement_postal=row.get("établissement_postal"),
-                    next_etablissement_postal=row.get("next_établissement_postal"),
-                    duration_to_next_step=row.get("duration_to_next_step"),
+
+            bag_fids = (
+                df_clean["RECPTCL_FID"]
+                .dropna()  # remove NaNs
+                .astype(str)  # ensure string keys
+                .str.strip()
+                .unique()
+            )
+
+            # Step 2 — Get all existing Bag objects in one query
+            existing_bags = Bag.objects.filter(receptacle_fid__in=bag_fids)
+
+            # Step 3 — Make a quick lookup map (fid → Bag object)
+            bag_map = {b.receptacle_fid: b for b in existing_bags}
+
+            # Step 4 — Create missing Bag objects (optional)
+            new_bags = []
+            for fid in bag_fids:
+                if fid not in bag_map:
+                    new_bags.append(Bag(receptacle_fid=fid))
+
+            if new_bags:
+                Bag.objects.bulk_create(new_bags)
+                # update the map with the new ones
+                created = Bag.objects.filter(
+                    receptacle_fid__in=[b.receptacle_fid for b in new_bags]
                 )
-                for _, row in df_clean[event_fields].iterrows()
-            ]
+                bag_map.update({b.receptacle_fid: b for b in created})
+
+            # Prepare PostalOffice map once
+            office_map = {
+                o.name.lower(): o
+                for o in PostalOffice.objects.select_related("state").all()
+            }
+
+            # Enrich DataFrame with office and state objects
+            df_clean["office_obj"] = df_clean["établissement_postal"].apply(
+                lambda name: office_map.get(str(name).lower())
+                if pd.notna(name)
+                else None
+            )
+            df_clean["state_obj"] = df_clean["office_obj"].apply(
+                lambda o: o.state if o else None
+            )
+            df_clean["next_office_obj"] = df_clean["next_établissement_postal"].apply(
+                lambda name: office_map.get(str(name).lower())
+                if pd.notna(name)
+                else None
+            )
+            df_clean["next_state_obj"] = df_clean["next_office_obj"].apply(
+                lambda o: o.state if o else None
+            )
+
+            unique_ids = df_clean["MAILITM_FID"].unique()
+            package_map = {
+                p.mailitm_fid: p
+                for p in Package.objects.filter(mailitm_fid__in=unique_ids)
+            }
+
+            event_objs = []
+            # Load all existing bags into a dictionary for quick lookup
+            for _, row in df_clean.iterrows():
+                package = package_map.get(
+                    row["MAILITM_FID"]
+                )  # ✅ link existing package if found
+
+                event_objs.append(
+                    PackageEvent(
+                        package=package,
+                        mailitm_fid=row["MAILITM_FID"],
+                        date=row["date"],
+                        event_type_cd=row.get("EVENT_TYPE_CD"),
+                        etablissement_postal=row.get("établissement_postal"),
+                        next_etablissement_postal=row.get("next_établissement_postal"),
+                        duration_to_next_step=row.get("duration_to_next_step"),
+                        office=row.get("office_obj"),
+                        next_office=row.get("next_office_obj"),
+                        state=row.get("state_obj"),
+                        next_state=row.get("next_state_obj"),
+                    )
+                )
+
             PackageEvent.objects.bulk_create(
                 event_objs, batch_size=1000, ignore_conflicts=True
             )
@@ -129,8 +227,6 @@ class UploadCSVAndSave(APIView):
             # --- Process Packages and Alerts in memory ---
             package_objs = []
             all_alerts_to_create = []
-
-            unique_ids = df_clean["MAILITM_FID"].unique()
             logger.info(f"Processing {len(unique_ids)} unique packages...")
 
             # Prefetch existing packages to update later
@@ -147,6 +243,7 @@ class UploadCSVAndSave(APIView):
 
             for mailitm_fid, sub in df_clean.groupby("MAILITM_FID"):
                 sub = sub.sort_values("date")
+
                 last_event = sub.iloc[-1]
                 last_event_type_cd = last_event["EVENT_TYPE_CD"]
                 last_event_timestamp = last_event["date"]
@@ -207,7 +304,8 @@ class UploadCSVAndSave(APIView):
                     status_val = "failure"
                     failed_at = failure_rows.iloc[0]["date"]
                     last_failure_index = sub[sub["EVENT_TYPE_CD"] == "36"].index[-1]
-                    after_failure = sub.loc[last_failure_index + 1 :]
+                    after_failure = sub.iloc[last_failure_index + 1 :]
+
                     cities_after_failure_count = (
                         after_failure["EVENT_TYPE_CD"] == "32"
                     ).sum()
@@ -376,8 +474,16 @@ class UploadCSVAndSave(APIView):
                     existing_alerts_set.add(key)
 
                 # --- Prepare Package object ---
+                bag_fid = (
+                    str(sub.iloc[0].get("RECPTCL_FID")).strip()
+                    if pd.notna(sub.iloc[0].get("RECPTCL_FID"))
+                    else None
+                )
+                bag_obj = bag_map.get(bag_fid) if bag_fid else None
+
                 package_obj = Package(
                     mailitm_fid=mailitm_fid,
+                    bag=bag_obj,
                     country=sub.iloc[0].get("country"),
                     total_duration=sub.iloc[0].get("total_duration"),
                     status=status_val,
@@ -435,6 +541,25 @@ class UploadCSVAndSave(APIView):
                 logger.info(f"Updated {len(existing_to_update)} existing packages.")
             else:
                 logger.info("no existing packages to update")
+
+            package_map = {
+                p.mailitm_fid: p
+                for p in Package.objects.filter(mailitm_fid__in=unique_ids)
+            }
+
+            # Update PackageEvents with missing package links
+            unlinked_events = PackageEvent.objects.filter(
+                package__isnull=True, mailitm_fid__in=unique_ids
+            )
+            for ev in unlinked_events:
+                pkg = package_map.get(ev.mailitm_fid)
+                if pkg:
+                    ev.package = pkg
+            PackageEvent.objects.bulk_update(
+                unlinked_events, ["package"], batch_size=1000
+            )
+            logger.info(f"Linked {len(unlinked_events)} events to their packages.")
+
             # --- Bulk create alerts ---
             if all_alerts_to_create:
                 Alert.objects.bulk_create(all_alerts_to_create, batch_size=1000)

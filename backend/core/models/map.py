@@ -41,7 +41,7 @@ class Alert(models.Model):
 
 
 class StateStats(models.Model):
-    state = models.OneToOneField(
+    state = models.ForeignKey(
         State,
         related_name="stats",
         on_delete=models.CASCADE,
@@ -52,13 +52,21 @@ class StateStats(models.Model):
     pre_arrived_dispatches_count = models.IntegerField(default=0)
     items_delivered = models.IntegerField(default=0)
     undelivered_items = models.IntegerField(default=0)
+    total_packages = models.IntegerField(default=0)
+    avg_delivery_duration = models.DurationField(null=True, blank=True)
+    avg_hold_duration = models.DurationField(null=True, blank=True)
+    seized_packages = models.IntegerField(default=0)
+    recovered_after_failure_count = models.IntegerField(default=0)
+    alert_after_success_count = models.IntegerField(default=0)
+    failure_before_success_count = models.FloatField(default=0)
+    cities_after_failure_avg = models.FloatField(default=0)
 
     def __str__(self):
         return f"Stats for {self.state.name}"
 
 
 class OfficeStats(models.Model):
-    office = models.OneToOneField(
+    office = models.ForeignKey(
         PostalOffice,
         related_name="stats",
         on_delete=models.CASCADE,
@@ -69,6 +77,15 @@ class OfficeStats(models.Model):
     pre_arrived_dispatches_count = models.IntegerField(default=0)
     items_delivered = models.IntegerField(default=0)
     undelivered_items = models.IntegerField(default=0)
+
+    total_packages = models.IntegerField(default=0)
+    avg_delivery_duration = models.DurationField(null=True, blank=True)
+    avg_hold_duration = models.DurationField(null=True, blank=True)
+    seized_packages = models.IntegerField(default=0)
+    recovered_after_failure_count = models.IntegerField(default=0)
+    alert_after_success_count = models.IntegerField(default=0)
+    failure_before_success_count = models.FloatField(default=0)
+    cities_after_failure_avg = models.FloatField(default=0)
 
     def __str__(self):
         return f"Stats for {self.office.name}"

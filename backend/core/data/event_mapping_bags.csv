@@ -1,0 +1,19 @@
+LOCAL_EVENT_TYPE_NM,EVENT_TYPECD
+Expédition de récipient à l'étranger (PREDES EDI-reçu),107
+Réception de récipient de l'étranger (Ent),130
+Expédition de récipient à une adresse nationale (Ent),132
+Expédition de récipient à une adresse nationale (Srt),103
+Ouvrir récipient (Ent),131
+Expédition de récipient à l'étranger (Srt),106
+Réception de récipient à une adresse nationale (Ent),133
+Receptacle evaluated for sampling,178
+Récipient évalué pour échantillonnage,178
+Modifier expédition du récipient (Srt),105
+Réception de récipient de l'étranger (RESCON EDI-reçu),135
+Réception de récipient envoyé par bureau (Srt),104
+Réception de récipient de l'étranger (RESDES EDI-reçu),134
+Créer récipient (Srt),100
+Fermer récipient (Srt),101
+Rouvrir récipient (Srt),102
+Marquer récipient comme supprimé,160
+Récipient chez transporteur (EDI reçu),161

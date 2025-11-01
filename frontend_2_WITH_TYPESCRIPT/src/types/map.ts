@@ -17,8 +17,7 @@ export interface Alert {
 // ─────────────────────────────────────────────
 export interface StateStats {
   id: number;
-  state_id: string | number;
-  name: string;
+  state: number;
   pre_arrived_dispatches_count: number;
   items_delivered: number;
   undelivered_items: number;
@@ -30,8 +29,7 @@ export interface StateStats {
 // ─────────────────────────────────────────────
 export interface OfficeStats {
   id: number;
-  office_id: string | number;
-  name: string;
+  office: string | number;
   pre_arrived_dispatches_count: number;
   items_delivered: number;
   undelivered_items: number;

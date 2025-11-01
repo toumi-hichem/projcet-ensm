@@ -8,7 +8,7 @@ from .major_centers import (
 from .office import StateStatsSerializer, OfficeStatsSerializer
 from .package import PackageSerializer, PackageEventSerializer
 from .transition import PackageTransitionSerializer
-from .upload import UploadMetaDataSerializer
+from .upload import UploadMetaDataSerializer, BagUploadMetaDataSerializer
 from .state_and_office import StateSerializer, PostalOfficeSerializer
 
 __all__ = [
@@ -23,6 +23,7 @@ __all__ = [
     "PackageEventSerializer",
     "PackageTransitionSerializer",
     "UploadMetaDataSerializer",
+    "BagUploadMetaDataSerializer",
     "StateSerializer",
     "PostalOfficeSerializer",
 ]

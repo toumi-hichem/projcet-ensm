@@ -4,6 +4,7 @@ from .map import OneOfficeAPIView, OneStateAPIView
 from .refresh import RefreshDashboard
 from .upload import UploadCSVAndSave, PackageStatsAPIView, TransitionReportAPIView
 from .rebuild_kpi_snapshots import RebuildSnapshotsAPIView
+from .upload_bags import UploadBagsCSV
 
 __all__ = [
     "DashboardApiView",
@@ -15,4 +16,5 @@ __all__ = [
     "PackageStatsAPIView",
     "TransitionReportAPIView",
     "RebuildSnapshotsAPIView",
+    "UploadBagsCSV",
 ]

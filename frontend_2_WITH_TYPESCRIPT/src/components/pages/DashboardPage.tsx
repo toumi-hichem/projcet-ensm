@@ -11,9 +11,15 @@ import {
 } from "../charts";
 // import { stats } from '../constants'
 import { useEffect } from "react";
-import type { Dashboard, KPIHistory, SelectedCardType } from "../../types";
+import type {
+  Dashboard,
+  KPIHistory,
+  KPIRep,
+  SelectedCardType,
+} from "../../types";
 import { KPI_TO_TITLE_AND_COLOR } from "../constants/kpi_titles";
 import type { DashboardStyleType } from "../../styles/dashboardStyles";
+import { KpiCard } from "../ui/kpi-card";
 
 const fetchDashboardData = async () => {
   console.log("fetching data");
@@ -311,13 +317,10 @@ export function DashboardPage({ styles }: Props) {
   console.log(stats);
 
   // Handle card clicks
-  const handleCardClick = (
-    kpiKey: keyof Dashboard | null,
-    index: number | null,
-  ) => {
+  const handleCardClick = (kpi: KPIRep) => {
     setSelectedCard({
-      key: kpiKey as keyof Dashboard,
-      index: index,
+      key: kpi.key,
+      index: kpi.index,
     }); // <-- This updates the selected card!
   };
 
@@ -325,11 +328,42 @@ export function DashboardPage({ styles }: Props) {
 
   return (
     <div>
-      <StatCards
+      {/*<StatCards
         stats={stats}
         onCardClick={handleCardClick}
         selectedCard={selectedCard}
-      />
+      />*/}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          gap: 12,
+        }}
+      >
+        {stats &&
+          Object.entries(stats).map(([key, value], index) => {
+            console.log("key: ", key);
+            if (key === "id") {
+              console.log("key:|||||||||||||| ", key);
+
+              return;
+            }
+            let onClickFunction;
+            if (key != "timestamp") {
+              onClickFunction = handleCardClick;
+            }
+            return (
+              <KpiCard
+                key={key}
+                title={key} // or map to a prettier label if needed
+                value={value ?? "N/A"} // your formatter
+                onCardClick={onClickFunction}
+                kpiKey={key}
+                index={index}
+              />
+            );
+          })}
+      </div>
       // Replace the chart section in your DashboardPage with this:
       <div
         style={{

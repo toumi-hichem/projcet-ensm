@@ -1,3 +1,6 @@
+import logging
+from core.utils.aiport_kpis_function import compute_airport_stats
+from core.utils.state_and_office_stats import compute_office_stats, compute_state_stats
 from django.utils import timezone
 import pandas as pd
 from datetime import datetime
@@ -6,8 +9,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from core.models import Package, Dashboard
+from core.models import CPXStats, CTNIStats, Package, Dashboard
 
+logger = logging.getLogger(__name__)
 SLA_DAYS = 3
 MAX_ALLOWED_DAYS = 60
 
@@ -18,12 +22,47 @@ class RefreshDashboard(APIView):
     POST: Rebuild dashboard snapshot for a historical period (start_date → end_date)
     """
 
+    def compute_hub_stats(self, hub_name, start_date=None, end_date=None):
+        """
+        Compute and store hub stats for CTNI or CPX.
+        Optional start_date/end_date to compute for historical period.
+        """
+        try:
+            logger.info(
+                f"[{hub_name}] Computing hub stats. "
+                f"Date range: {start_date} → {end_date}"
+            )
+
+            packages_qs = Package.objects.all()
+            if start_date and end_date:
+                packages_qs = packages_qs.filter(
+                    last_event_timestamp__range=[start_date, end_date]
+                )
+
+            if hub_name == "CTNI":
+                CTNIStats.compute_stats("CTNI", packages_queryset=packages_qs)
+            elif hub_name == "ALGER COLIS POSTAUX":
+                CPXStats.compute_stats(
+                    "ALGER COLIS POSTAUX", packages_queryset=packages_qs
+                )
+
+            logger.info(f"[{hub_name}] Hub stats computation completed successfully.")
+        except Exception as e:
+            logger.exception(f"Error computing hub stats for {hub_name}: {e}")
+
     def get_queryset(self, start_date=None, end_date=None):
-        """Return filtered queryset based on optional date range using last_event_timestamp."""
-        qs = Package.objects.all()
-        if start_date and end_date:
-            qs = qs.filter(last_event_timestamp__range=[start_date, end_date])
-        return qs
+        """Return filtered queryset based on optional date range."""
+        try:
+            logger.info(f"Building queryset (start={start_date}, end={end_date})")
+            qs = Package.objects.all()
+            if start_date and end_date:
+                qs = qs.filter(last_event_timestamp__range=[start_date, end_date])
+            count = qs.count()
+            logger.info(f"Queryset built successfully ({count} packages found).")
+            return qs
+        except Exception as e:
+            logger.exception(f"Error building queryset: {e}")
+            raise
 
     def calculate_kpis(self, qs):
         """Encapsulate all KPI calculations to reuse for GET/POST."""
@@ -200,20 +239,36 @@ class RefreshDashboard(APIView):
 
     def get(self, request, *args, **kwargs):
         """Refresh current snapshot using latest events."""
+        logger.debug("Refreshing KPIs...")
         now = datetime.now()
         qs = self.get_queryset()
         data = self.calculate_kpis(qs)
+
+        logger.debug("Dashboard kpis...")
         self.save_to_dashboard(data, now)
+
+        logger.debug("Office kpis...")
+        compute_office_stats()
+        logger.debug("State kpis...")
+        compute_state_stats()
+        logger.debug("Airport kpis...")
+        compute_airport_stats()
+        logger.debug("CTNI kpis...")
+        self.compute_hub_stats("CTNI")
+        logger.debug("CPX kpis...")
+        self.compute_hub_stats("ALGER COLIS POSTAUX")
         return Response(
             {"status": "ok", "timestamp": now.isoformat()}, status=status.HTTP_200_OK
         )
 
     def post(self, request, *args, **kwargs):
         """Rebuild snapshot for a given period (using last_event_timestamp range)."""
+
         start_date_str = request.data.get("start_date")
         end_date_str = request.data.get("end_date")
-
+        logger.info(f"Refreshing kpis between {start_date_str} - {end_date_str}")
         if not start_date_str or not end_date_str:
+            logger.error("start_date and end_date are required")
             return Response(
                 {"error": "start_date and end_date are required"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -231,6 +286,7 @@ class RefreshDashboard(APIView):
                 end_date = timezone.make_aware(end_date)
 
         except Exception as e:
+            logger.error(f"Invalid date format: {str(e)}")
             return Response(
                 {"error": f"Invalid date format: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -243,8 +299,20 @@ class RefreshDashboard(APIView):
         snapshot_time = end_date.replace(hour=23, minute=59, second=59, microsecond=0)
         if timezone.is_naive(snapshot_time):
             snapshot_time = timezone.make_aware(snapshot_time)
-
+        logger.debug("Dashboard kpis...")
         self.save_to_dashboard(data, snapshot_time)
+        logger.debug("Office kpis...")
+        compute_office_stats(start_date, end_date)
+        logger.debug("State kpis...")
+        compute_state_stats(start_date, end_date)
+        logger.debug("Airport kpis...")
+        compute_airport_stats(start_date, end_date)
+
+        logger.debug("CTNI kpis...")
+        self.compute_hub_stats("CTNI", start_date, end_date)
+        logger.debug("CPX kpis...")
+        self.compute_hub_stats("ALGER COLIS POSTAUX", start_date, end_date)
+        logger.debug("KPIs completed.")
 
         return Response(
             {"status": "ok", "timestamp": snapshot_time.isoformat()},

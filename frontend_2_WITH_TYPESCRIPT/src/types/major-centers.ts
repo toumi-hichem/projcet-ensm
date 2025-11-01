@@ -1,64 +1,96 @@
 // types/majorCenters.ts
 
 export interface CTNIStats {
+  id: number;
   timestamp: string;
 
-  // Counts (Operational Volumes)
-  ctni_pre_arrived_dispatches_count: number;
-  ctni_items_delivered: number;
-  ctni_items_delivered_after_one_fail: number;
-  ctni_undelivered_items: number;
+  // Volumes
+  incoming_bags_count: number;
+  outgoing_bags_count: number;
+  delayed_arrivals_count: number;
+  unprocessed_items_count: number;
 
-  // KPI Rates (Performance)
-  ctni_delivery_rate: number;
-  ctni_on_time_delivery_rate: number;
-
-  // Delays and Exceptions
-  ctni_items_exceeding_holding_time: number;
-  ctni_items_blocked_in_customs: number;
-  ctni_returned_items: number;
-
-  // Transit Time KPIs (Delays)
-  ctni_consolidation_time: string;
-  ctni_end_to_end_transit_time_average: string;
-  ctni_shipment_consolidation_time: string;
+  // Efficiency / Throughput
+  avg_sorting_time: string | null;
+  max_sorting_time: string | null;
+  throughput_rate: number;
+  avg_items_per_bag: number;
 
   // Exceptions / Traceability
-  ctni_unscanned_items: number;
+  unscanned_items_count: number;
+  misrouted_items_count: number;
+  damaged_items_count: number;
+  alerts_triggered_count: number;
+  seized_items_count: number;
+
+  // Transit / Timing
+  avg_holding_time: string | null;
+  median_holding_time: string | null;
+  items_exceeding_holding_time: number;
 }
 
 export interface CPXStats {
+  id: number;
   timestamp: string;
-  cpx_pre_arrived_dispatches_count: number;
-  cpx_items_delivered: number;
-  cpx_items_delivered_after_one_fail: number;
-  cpx_undelivered_items: number;
-  cpx_delivery_rate: number;
-  cpx_on_time_delivery_rate: number;
-  cpx_items_exceeding_holding_time: number;
-  cpx_items_blocked_in_customs: number;
-  cpx_returned_items: number;
-  cpx_consolidation_time: string;
-  cpx_end_to_end_transit_time_average: string;
-  cpx_shipment_consolidation_time: string;
-  cpx_unscanned_items: number;
+
+  // Volumes
+  incoming_bags_count: number;
+  outgoing_bags_count: number;
+  delayed_arrivals_count: number;
+  unprocessed_items_count: number;
+
+  // Efficiency / Throughput
+  avg_sorting_time: string | null;
+  max_sorting_time: string | null;
+  throughput_rate: number;
+  avg_items_per_bag: number;
+
+  // Exceptions / Traceability
+  unscanned_items_count: number;
+  misrouted_items_count: number;
+  damaged_items_count: number;
+  alerts_triggered_count: number;
+  seized_items_count: number;
+
+  // Transit / Timing
+  avg_holding_time: string | null;
+  median_holding_time: string | null;
+  items_exceeding_holding_time: number;
 }
 
 export interface AirportStats {
-  timestamp: string;
-  airport_pre_arrived_dispatches_count: number;
-  airport_items_delivered: number;
-  airport_items_delivered_after_one_fail: number;
-  airport_undelivered_items: number;
-  airport_delivery_rate: number;
-  airport_on_time_delivery_rate: number;
-  airport_items_exceeding_holding_time: number;
-  airport_items_blocked_in_customs: number;
-  airport_returned_items: number;
-  airport_consolidation_time: string;
-  airport_end_to_end_transit_time_average: string;
-  airport_shipment_consolidation_time: string;
-  airport_unscanned_items: number;
+  id: number;
+  timestamp: string; // ISO datetime string
+
+  // 📦 Lifecycle & Volume
+  bags_created_count: number;
+  bags_closed_count: number;
+  bags_reopened_count: number;
+  bags_deleted_count: number;
+  bags_modified_count: number;
+
+  // 🌍 Domestic / International Flow
+  domestic_bags_sent_count: number;
+  domestic_bags_received_count: number;
+  international_bags_sent_count: number;
+  international_bags_received_count: number;
+  international_vs_domestic_ratio: number;
+
+  // 🕓 Timing & Performance
+  avg_bag_lifecycle_time: string | null; // ISO 8601 duration or null
+  avg_duration_to_export: string | null;
+  avg_duration_to_delivery: string | null;
+  avg_transit_duration_domestic: string | null;
+  avg_transit_duration_international: string | null;
+  max_transit_duration: string | null;
+  avg_handling_duration: string | null;
+
+  // ⚠️ Quality & Exceptions
+  bags_sampled_count: number;
+  bags_with_carrier_count: number;
+  bags_with_missing_next_office: number;
+  bags_with_missing_country: number;
+  bags_in_customs_count: number;
 }
 
 export type MajorCenterID = "ctni" | "cpx" | "airport" | "all";

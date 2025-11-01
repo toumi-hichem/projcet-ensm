@@ -5,6 +5,9 @@ import traceback
 from core.models import UploadMetaData
 from django.utils import timezone
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def clean_package_data(raw_csv_file):
@@ -19,8 +22,27 @@ def clean_package_data(raw_csv_file):
         # --- 1️⃣ Read CSV safely ---
         text_stream = io.TextIOWrapper(raw_csv_file, encoding="utf-8")
         try:
-            df_raw = pd.read_csv(text_stream, sep=",", dtype=str)
+            logger.debug("Reading csv file: ")
+            df_raw = pd.read_csv(
+                text_stream,
+                sep=";",
+                dtype=str,
+                engine="python",
+                on_bad_lines="skip",
+                encoding_errors="replace",
+            )
+            # ✅ clean BOM / spaces from column names
+            df_raw.columns = df_raw.columns.str.strip()
+
+            # ✅ debug log to inspect column names
+            logger.debug(f"📋 Columns found: {list(df_raw.columns)}")
+            logger.debug(
+                f"🧩 Initial CSV load: shape={df_raw.shape}, columns={list(df_raw.columns)}"
+            )
+            logger.debug(f"First few rows:\n{df_raw.head(3).to_string()}")
+
         except Exception as e:
+            logger.error(e)
             metadata["errors"].append(f"CSV parsing error: {str(e)}")
             metadata["traceback"] = traceback.format_exc()
             return pd.DataFrame(), metadata
@@ -55,8 +77,8 @@ def clean_package_data(raw_csv_file):
 
         # --- 5️⃣ Derive and clean ---
         df["country"] = df["MAILITM_FID"].astype(str).str[-2:]
-        if "RECPTCL_FID" in df.columns:
-            df = df.drop(columns=["RECPTCL_FID"])
+        # if "RECPTCL_FID" in df.columns:
+        #     df = df.drop(columns=["RECPTCL_FID"])
 
         df = df.sort_values(["MAILITM_FID", "date"])
 
@@ -167,6 +189,7 @@ def save_upload_metadata(uploaded_file, metadata, extra_stats=None):
     Creates and saves an UploadMetaData entry from the given file and metadata.
     Automatically fills all fields that exist in the model and gracefully skips missing ones.
     """
+    logger.info("Starting to save metadata for upload")
     data = {}
 
     # --- File info ---
@@ -175,7 +198,7 @@ def save_upload_metadata(uploaded_file, metadata, extra_stats=None):
     data["file_type"] = os.path.splitext(data["filename"])[-1].replace(".", "") or "csv"
     data["upload_timestamp"] = timezone.now()
 
-    # --- Metadata mapping (auto-skip missing keys) ---
+    # --- Metadata mapping ---
     direct_fields = [
         "n_rows",
         "n_columns",
@@ -192,22 +215,39 @@ def save_upload_metadata(uploaded_file, metadata, extra_stats=None):
         "avg_step_duration_seconds",
         "avg_total_duration_seconds",
     ]
+
     for key in direct_fields:
         if key in metadata:
             data[key] = metadata[key]
+        else:
+            logger.warning(f"⚠️ '{key}' missing from metadata, defaulting to safe value")
+
+    # --- Safe defaults for required fields ---
+    data.setdefault("n_rows", 0)
+    data.setdefault("n_columns", 0)
+    data.setdefault("columns", [])  # if your model uses JSONField or ArrayField
+    data.setdefault("missing_values_count", 0)
+    data.setdefault("missing_values_by_column", {})
+    data.setdefault("unique_packages_count", 0)
+    data.setdefault("unique_event_types", 0)
+    data.setdefault("top_event_types", {})
+    data.setdefault("time_range_days", 0)
+    data.setdefault("cleaning_time_seconds", 0.0)
+    data.setdefault("avg_step_duration_seconds", 0.0)
+    data.setdefault("avg_total_duration_seconds", 0.0)
 
     # --- Field name mapping for your model ---
-    data["rows_removed_duplicates"] = metadata.get("rows_removed_due_to_duplicates")
-    data["rows_removed_invalid"] = metadata.get("rows_removed_due_to_invalid_id")
+    data["rows_removed_duplicates"] = metadata.get("rows_removed_due_to_duplicates", 0)
+    data["rows_removed_invalid"] = metadata.get("rows_removed_due_to_invalid_id", 0)
 
-    # --- Merge any processing stats ---
+    # --- Merge any extra processing stats ---
     if extra_stats:
         valid_fields = {f.name for f in UploadMetaData._meta.fields}
         for k, v in extra_stats.items():
             if k in valid_fields:
                 data[k] = v
 
-    # --- Ensure numeric defaults ---
+    # --- Numeric defaults for counters ---
     defaults = {
         "events_inserted": 0,
         "packages_created": 0,
@@ -217,6 +257,13 @@ def save_upload_metadata(uploaded_file, metadata, extra_stats=None):
     for k, v in defaults.items():
         data.setdefault(k, v)
 
-    # --- Save ---
-    record = UploadMetaData.objects.create(**data)
-    return record
+    logger.debug(f"🧾 UploadMetaData payload before save:\n{data}")
+
+    try:
+        record = UploadMetaData.objects.create(**data)
+        logger.info(f"✅ UploadMetaData saved successfully: ID={record.id}")
+        return record
+    except Exception as e:
+        logger.error(f"❌ Failed to save UploadMetaData: {e}")
+        logger.error(f"Payload that caused error: {data}")
+        raise

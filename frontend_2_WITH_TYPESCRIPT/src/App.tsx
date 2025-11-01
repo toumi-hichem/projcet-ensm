@@ -4,12 +4,13 @@ import { Sidebar } from "./components";
 import {
   Header,
   DashboardPage,
-  AlgeriaMapPage,
+  // AlgeriaMapPage,
   Bureauxdeposte,
   AlgeriaMapPage2,
   UploadPage,
 } from "./components";
 import type { Pages } from "./types";
+import { AlgeriaMapPage } from "./components/pages/AlgerianMapPage";
 
 function App() {
   const [activeTab, setActiveTab] = useState<Pages>("dashboard");

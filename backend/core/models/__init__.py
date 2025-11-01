@@ -1,15 +1,17 @@
+from .bag import Bag, BagEvent
 from .dashboard import Dashboard
-from .event import PackageEvent
 from .history import KPIHistory
 from .major_center import CPXStats, CTNIStats, AirportStats
 from .map import OfficeStats, StateStats, Alert
-from .package import Package
+from .package import Package, PackageEvent
 from .states_offices import State, PostalOffice
 from .transition import PackageTransition
-from .upload import UploadMetaData
+from .upload import UploadMetaData, BagUploadMetaData
 
 
 __all__ = [
+    "Bag",
+    "BagEvent",
     "Dashboard",
     "PackageEvent",
     "KPIHistory",
@@ -24,4 +26,5 @@ __all__ = [
     "PostalOffice",
     "PackageTransition",
     "UploadMetaData",
+    "BagUploadMetaData",
 ]
